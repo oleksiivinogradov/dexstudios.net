@@ -28,7 +28,7 @@ The site is configured to automatically deploy to GitHub Pages when you push to 
 3. **Monitor Deployment**
    - Go to the "Actions" tab in your repository
    - Watch the deployment workflow run
-   - Once complete, your site will be live at: `https://yourusername.github.io/dexstudios.net/`
+   - Once complete, your site will be live at: `https://oleksiivinogradov.github.io/dexstudios.net/`
 
 ### Custom Domain Setup
 
@@ -37,7 +37,7 @@ If you want to use a custom domain (e.g., dexstudios.net):
 1. **Add CNAME file**
    Create a file named `CNAME` in the `public` folder with your domain:
    ```
-   www.dexstudios.net
+   dexstudios.net
    ```
 
 2. **Update vite.config.ts**
@@ -55,7 +55,7 @@ If you want to use a custom domain (e.g., dexstudios.net):
    - Type: `A`, Name: `@`, Value: `185.199.109.153`
    - Type: `A`, Name: `@`, Value: `185.199.110.153`
    - Type: `A`, Name: `@`, Value: `185.199.111.153`
-   - Type: `CNAME`, Name: `www`, Value: `yourusername.github.io`
+   - Type: `CNAME`, Name: `www`, Value: `oleksiivinogradov.github.io`
 
 4. **Enable Custom Domain in GitHub**
    - Go to Settings → Pages
