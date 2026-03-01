@@ -30,10 +30,26 @@ jobs:
           
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Scanner Dependencies
+        working-directory: ./radar/scanner
+        run: npm install
+
+      - name: Run Radar Scanner
+        working-directory: ./radar/scanner
+        run: npm start
         
       - name: Build
         run: npm run build
         
+      - name: Copy Radar to Dist
+        run: |
+          mkdir -p dist/radar
+          cp radar/index.html dist/radar/
+          cp radar/style.css dist/radar/
+          cp radar/main.js dist/radar/
+          cp -r radar/evm dist/radar/evm || true
+          
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
