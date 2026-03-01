@@ -15,7 +15,7 @@ const Games = () => {
                         <div className="game-content">
                             <div className="game-number">01</div>
                             <div className="game-badge">
-                                <img src="/images/LabelUp_v1.png" alt="DexGO" />
+                                <img src="/images/LabelDown_v1.png" alt="DexGO" />
                             </div>
                             <h3>DexGO</h3>
                             <p className="game-description">
@@ -45,7 +45,7 @@ const Games = () => {
                         <div className="game-content">
                             <div className="game-number">02</div>
                             <div className="game-badge">
-                                <img src="/images/LabelDown_v1.png" alt="MotoDEX" />
+                                <img src="/images/LabelUp_v1.png" alt="MotoDEX" />
                             </div>
                             <h3>MotoDEX</h3>
                             <p className="game-description">
@@ -68,10 +68,40 @@ const Games = () => {
                         </div>
                     </div>
 
-                    {/* SeaBattle VR */}
+                    {/* Wizverse */}
                     <div className="game-item">
                         <div className="game-content">
                             <div className="game-number">03</div>
+                            <h3>Wizverse</h3>
+                            <p className="game-description">
+                                Enter Wizverse, a dynamic multiplayer wizard battle game! Cast powerful spells, outsmart rivals, and prove you're the ultimate mage in thrilling magical duels.
+                            </p>
+                            <div className="game-stats">
+                                <div className="stat">
+                                    <span className="stat-value">2.5k</span>
+                                    <span className="stat-label">UAW /day in peaks</span>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-value">Jan 2025</span>
+                                    <span className="stat-label">Live since</span>
+                                </div>
+                            </div>
+                            <a href="https://wizverse.net/" className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+                                Visit Website
+                            </a>
+                        </div>
+                        <div className="game-image">
+                            <img src="/images/wizverse-screenshot.png" alt="Wizverse Game Screenshot" className="game-screenshot" />
+                        </div>
+                    </div>
+
+                    {/* SeaBattle VR */}
+                    <div className="game-item game-item-reverse">
+                        <div className="game-image">
+                            <img src="/images/287f6f_acedbfef222b4987b8cb54360b981da3f000.jpg" alt="SeaBattle VR Game Screenshot" className="game-screenshot" />
+                        </div>
+                        <div className="game-content">
+                            <div className="game-number">04</div>
                             <h3>SeaBattle VR</h3>
                             <p className="game-description">
                                 Dive into the heart-pounding action of SeaBattle VR game by DEXStudios,
@@ -81,9 +111,6 @@ const Games = () => {
                                 className="btn btn-primary" target="_blank" rel="noopener noreferrer">
                                 Download App
                             </a>
-                        </div>
-                        <div className="game-image">
-                            <img src="/images/287f6f_acedbfef222b4987b8cb54360b981da3f000.jpg" alt="SeaBattle VR Game Screenshot" className="game-screenshot" />
                         </div>
                     </div>
                 </div>

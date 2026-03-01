@@ -1,16 +1,19 @@
 import './Partners.css';
 
 const partners = [
-    { name: 'Saga', img: 'https://logo.clearbit.com/saga.xyz', url: 'https://saga.xyz' },
-    { name: 'Polygon', img: 'https://logo.clearbit.com/polygon.technology', url: 'https://polygon.technology' },
-    { name: 'Chainlink', img: 'https://logo.clearbit.com/chain.link', url: 'https://chain.link' },
-    { name: 'Near', img: 'https://logo.clearbit.com/near.org', url: 'https://near.org' },
-    { name: 'Aurora', img: 'https://logo.clearbit.com/aurora.dev', url: 'https://aurora.dev' },
-    { name: 'CoinGecko', img: 'https://logo.clearbit.com/coingecko.com', url: 'https://coingecko.com' },
-    { name: 'CoinMarketCap', img: 'https://logo.clearbit.com/coinmarketcap.com', url: 'https://coinmarketcap.com' },
-    { name: 'BNB Chain', img: 'https://logo.clearbit.com/bnbchain.org', url: 'https://bnbchain.org' },
-    { name: 'Ethereum', img: 'https://logo.clearbit.com/ethereum.org', url: 'https://ethereum.org' },
-    { name: 'Solana', img: 'https://logo.clearbit.com/solana.com', url: 'https://solana.com' },
+    { name: 'Aleph Zero', img: '/partners/partner-1.png', url: 'https://alephzero.org' },
+    { name: 'Saga', img: '/partners/partner-2.png', url: 'https://saga.xyz' },
+    { name: 'Galxe', img: '/partners/partner-3.png', url: 'https://galxe.com' },
+    { name: 'Concordium', img: '/partners/partner-4.png', url: 'https://concordium.com' },
+    { name: 'SKALE', img: '/partners/partner-5.png', url: 'https://skale.space' },
+    { name: 'Aurora', img: '/partners/partner-6.png', url: 'https://aurora.dev' },
+    { name: 'Manta Network', img: '/partners/partner-7.png', url: 'https://manta.network' },
+    { name: 'EOS', img: '/partners/partner-8.png', url: 'https://eosnetwork.com' },
+    { name: 'Mantle', img: '/partners/partner-9.png', url: 'https://mantle.xyz' },
+    { name: 'Near', img: '/partners/partner-10.png', url: 'https://near.org' },
+    { name: 'Somnia', img: '/partners/partner-11.jpg', url: 'https://somnia.network' },
+    { name: 'MoonBeam', img: '/partners/partner-12.png', url: 'https://moonbeam.network' },
+    { name: 'BDAG', img: '/partners/partner-13.jpg', url: 'https://blockdag.network' },
 ];
 
 const Partners = () => {
