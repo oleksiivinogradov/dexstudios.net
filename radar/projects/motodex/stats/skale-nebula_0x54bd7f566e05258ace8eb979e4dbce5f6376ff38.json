@@ -1,5 +1,5 @@
 {
-  "total": 962,
+  "total": 7414,
   "last24h": 598,
   "recentTxs": [
     {
@@ -73,11 +73,19 @@
       "timeStamp": 1772468189
     }
   ],
-  "lastUpdated": "2026-03-02T16:28:21.423Z",
+  "lastUpdated": "2026-03-02T18:21:13.341Z",
   "dailyCounts": [
     {
       "date": "2026-03-02",
       "count": 598
+    },
+    {
+      "date": "2026-03-01",
+      "count": 2989
+    },
+    {
+      "date": "2026-02-28",
+      "count": 3463
     }
   ]
 }
