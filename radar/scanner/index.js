@@ -329,10 +329,8 @@ async function runScanner() {
           break;
         }
 
-        if (blockCountProcessed >= 1500 && lastProcessedBlock === 0) {
-          console.log(`[${chain}] Reached max 1500 blocks for bootstrapping run. Will continue next cycle.`);
-          break;
-        }
+        // No block-count cap — the 1-day time limit on first run is sufficient.
+        // Fast chains (e.g. Somnia ~10 blocks/s) would never bootstrap if capped at 1500.
       }
 
       // ── Save tx stats ──

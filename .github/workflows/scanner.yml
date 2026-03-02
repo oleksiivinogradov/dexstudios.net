@@ -6,9 +6,15 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
+# Only one scanner job runs at a time; new ones wait instead of queuing duplicates
+concurrency:
+  group: radar-scanner
+  cancel-in-progress: false
+
 jobs:
   scan-and-commit:
     runs-on: ubuntu-latest
+    timeout-minutes: 360   # 6h ceiling for first-run bootstrap of fast chains
     permissions:
       contents: write
       
