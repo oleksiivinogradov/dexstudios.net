@@ -53,5 +53,9 @@ jobs:
             echo "No scanner data changes detected."
           else
             git commit -m "chore(radar): scanner sync $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-            git push
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin main && git push && break
+              echo "Push attempt $i failed, retrying in 5s..."
+              sleep 5
+            done
           fi

@@ -85,14 +85,28 @@ function buildChainFilter(containerId, chains, onSelect) {
 }
 
 /* ── Last-update footer ────────────────────────────────────────── */
+const CLOCK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+function _renderFooterTime(el) {
+  const isoStr = el.dataset.lastUpdated;
+  if (!isoStr) return;
+  const mins = Math.round((Date.now() - new Date(isoStr)) / 60000);
+  const label = mins < 1 ? 'just now' : mins < 60 ? `${mins} minute${mins === 1 ? '' : 's'} ago` : `${Math.round(mins / 60)} hours ago`;
+  el.innerHTML = `${CLOCK_SVG} ${label}`;
+}
+
 function setFooterTime(id, isoStr) {
   const el = $(id);
   if (!el) return;
-  if (!isoStr) { el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> No data yet`; return; }
-  const mins = Math.round((Date.now() - new Date(isoStr)) / 60000);
-  const label = mins < 1 ? 'just now' : mins < 60 ? `${mins} minutes ago` : `${Math.round(mins/60)} hours ago`;
-  el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ${label}`;
+  if (!isoStr) { el.innerHTML = `${CLOCK_SVG} No data yet`; return; }
+  el.dataset.lastUpdated = isoStr;
+  _renderFooterTime(el);
 }
+
+// Tick all footer-time elements every 60 s so the label stays current.
+setInterval(() => {
+  document.querySelectorAll('.footer-time[data-last-updated]').forEach(_renderFooterTime);
+}, 60000);
 
 /* ── Build chart data from recentTxs ───────────────────────────── */
 function buildDayBuckets(allTxs, days) {
