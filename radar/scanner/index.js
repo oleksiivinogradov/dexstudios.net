@@ -18,11 +18,6 @@ const NETWORK_RPCS = {
   'somnia': [
     'https://api.infra.mainnet.somnia.network/'
   ],
-  'polygon': [
-    'https://polygon.llamarpc.com',
-    'https://polygon-rpc.com',
-    'https://rpc.ankr.com/polygon'
-  ]
 };
 
 // Average block time in seconds — used only on first run to estimate the start block
@@ -30,17 +25,14 @@ const NETWORK_RPCS = {
 const CHAIN_AVG_BLOCK_TIME = {
   'skale-nebula': 3,
   'somnia':       0.1,
-  'polygon':      2,
 };
 
 // How long (ms) to spend scanning each chain per run.
-// The scanner stops when the budget is exhausted and resumes from the exact
-// same block next run — no historical gaps, no arbitrary block-count caps.
-// Budget should leave ~60 s of headroom for git commit/push after all chains.
+// Chains run in parallel so total wall-time ≈ max(budgets), not sum.
+// Budget leaves ~60 s headroom for git commit/push after all chains finish.
 const CHAIN_TIME_BUDGET_MS = {
-  'skale-nebula': 3 * 60 * 1000,          // 3 min
-  'somnia':       3.5 * 60 * 1000,        // 3.5 min  (~52 k blocks at 250 blk/s)
-  'polygon':      2 * 60 * 1000,          // 2 min
+  'skale-nebula': 3 * 60 * 1000,    // 3 min
+  'somnia':       3.5 * 60 * 1000,  // 3.5 min (~52 k blocks at 250 blk/s)
 };
 const DEFAULT_CHAIN_TIME_BUDGET_MS = 3 * 60 * 1000;
 
@@ -49,7 +41,6 @@ const DEFAULT_CHAIN_TIME_BUDGET_MS = 3 * 60 * 1000;
 const MAX_SCAN_BLOCKS = {
   'skale-nebula': 500000,
   'somnia':       500000,
-  'polygon':      500000,
 };
 const DEFAULT_MAX_SCAN_BLOCKS = 500000;
 
@@ -58,7 +49,6 @@ const DEFAULT_MAX_SCAN_BLOCKS = 500000;
 const BLOCK_FETCH_CONCURRENCY = {
   'skale-nebula': 5,
   'somnia':       20,
-  'polygon':      10,
 };
 
 const WAIT_TIME_ON_LIMIT = 5000;
@@ -261,6 +251,229 @@ class RotatingProvider {
   }
 }
 
+// ── Per-chain scanner ─────────────────────────────────────────────
+// Returns { chain, chainWallets } where chainWallets is
+// { projectId: { 'YYYY-MM-DD': Set<addr> } } for this chain only.
+// Wallet saves are intentionally deferred to the caller so cross-chain
+// shared files (wallets/*.json) are written sequentially without races.
+
+async function scanChain(chain, chainsMap, projects) {
+  const chainWallets = {}; // local wallet accumulator for this chain
+
+  console.log(`\n================ Processing Chain: ${chain} ================`);
+
+  const addressesToTrack = Array.from(chainsMap[chain].addresses);
+  console.log(`Tracking ${addressesToTrack.length} contracts on ${chain}`);
+
+  const stateFile = path.join(__dirname, `${chain}_state.json`);
+  let lastProcessedBlock = 0;
+  if (fs.existsSync(stateFile)) {
+    lastProcessedBlock = JSON.parse(fs.readFileSync(stateFile, 'utf8')).lastProcessedBlock || 0;
+  }
+
+  const provider = new RotatingProvider(chain);
+
+  try {
+    const latestBlockNumber = await provider.getLatestBlockNumber();
+    console.log(`[${chain}] Latest block: ${latestBlockNumber}, Last processed: ${lastProcessedBlock || 'None'}`);
+
+    let targetBlock    = latestBlockNumber;
+    const isFirstRun   = lastProcessedBlock === 0;
+    const maxBlocks    = MAX_SCAN_BLOCKS[chain] || DEFAULT_MAX_SCAN_BLOCKS;
+    const timeBudgetMs = CHAIN_TIME_BUDGET_MS[chain] || DEFAULT_CHAIN_TIME_BUDGET_MS;
+
+    // Resume from last saved position — no skip-ahead, preserving full history.
+    // The time budget controls how much we process per run; state is saved on
+    // every checkpoint so the next run resumes exactly where this one stopped.
+    let stopBlock = lastProcessedBlock > 0 ? lastProcessedBlock : 0;
+    const gap = targetBlock - stopBlock;
+    if (gap > 0) {
+      console.log(`[${chain}] Gap of ${gap} blocks to catch up. Time budget: ${Math.round(timeBudgetMs / 1000)}s.`);
+    }
+
+    // Safety: if gap exceeds the hard ceiling (e.g. first run on a chain with
+    // millions of genesis blocks), skip ahead to avoid multi-hour bootstrap.
+    if (gap > maxBlocks) {
+      const newStop = targetBlock - maxBlocks;
+      console.log(`[${chain}] Gap exceeds safety ceiling ${maxBlocks}. Skipping ahead (${stopBlock} → ${newStop}).`);
+      stopBlock = newStop;
+    }
+
+    const firstRunCutoff = isFirstRun
+      ? Math.floor(Date.now() / 1000) - MAX_HISTORY_SECONDS
+      : 0;
+
+    // ── Tx stats cache (per contract) ──
+    const statsCache = {};
+    const getStatsObj = (projectId, contractAdd) => {
+      const sid = `${projectId}_${contractAdd}`;
+      if (statsCache[sid]) return statsCache[sid];
+      const sDir  = path.join(PROJECTS_DIR, projectId, 'stats');
+      if (!fs.existsSync(sDir)) fs.mkdirSync(sDir, { recursive: true });
+      const sFile = path.join(sDir, `${chain}_${contractAdd}.json`);
+      let stats   = { total: 0, last24h: 0, recentTxs: [], dailyCounts: [] };
+      if (fs.existsSync(sFile)) stats = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+      if (!QUICK_MODE) {
+        stats.last24h   = 0;   // reset rolling window on every full run
+        stats.recentTxs = [];  // rebuild from scratch each full run
+      }
+      statsCache[sid] = { file: sFile, data: stats };
+      return statsCache[sid];
+    };
+
+    // Pre-init stats for every tracked contract
+    for (const addr of chainsMap[chain].addresses) {
+      for (const map of chainsMap[chain].mappings[addr]) getStatsObj(map.projectId, addr);
+    }
+
+    // Save latestBlockNumber NOW before touching any blocks.
+    // If the job is cancelled at any point (even block 0), the next run
+    // will correctly resume from this point instead of re-scanning.
+    fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
+
+    let blockCountProcessed = 0;
+    let hitTimeLimit        = false;
+    const totalBlocks       = latestBlockNumber - stopBlock;
+    const scanStartTime     = Date.now();
+    const concurrency       = BLOCK_FETCH_CONCURRENCY[chain] || 1;
+
+    // ── Block scan loop (parallel batch fetching) ──
+    // Each iteration fetches `concurrency` blocks in parallel, then processes them.
+    // This dramatically reduces wall-time on fast chains like Somnia (~0.1s/block).
+    while (targetBlock > stopBlock && !hitTimeLimit) {
+      // Build the batch of block numbers for this iteration
+      const batchNums = [];
+      for (let i = 0; i < concurrency && (targetBlock - i) > stopBlock; i++) {
+        batchNums.push(targetBlock - i);
+      }
+
+      // Fetch all blocks in the batch concurrently
+      const blocks = await Promise.all(batchNums.map(n => provider.fetchBlockWithRetry(n)));
+
+      for (let bi = 0; bi < blocks.length && !hitTimeLimit; bi++) {
+        const block       = blocks[bi];
+        const curBlockNum = batchNums[bi];
+
+        if (!block) { blockCountProcessed++; continue; }
+
+        // ── Progress log + checkpoint every 100 blocks ──
+        if (blockCountProcessed % 100 === 0) {
+          let etaStr = '';
+          if (blockCountProcessed > 0 && totalBlocks > 0) {
+            const elapsed    = Date.now() - scanStartTime;
+            const msPerBlock = elapsed / blockCountProcessed;
+            const remaining  = totalBlocks - blockCountProcessed;
+            const etaSec     = Math.round(msPerBlock * remaining / 1000);
+            const etaMin     = Math.floor(etaSec / 60);
+            etaStr = etaMin > 0
+              ? `  ETA ~${etaMin}m ${etaSec % 60}s  (${blockCountProcessed}/${totalBlocks} blocks)`
+              : `  ETA ~${etaSec}s  (${blockCountProcessed}/${totalBlocks} blocks)`;
+          }
+          console.log(`[${chain}] Scanning block ${curBlockNum} (${new Date(block.timestamp * 1000).toISOString()})...${etaStr}`);
+
+          // Save state so next run resumes here if the process is killed mid-scan.
+          // dailyCounts is NOT updated here — only at end of chain scan.
+          if (blockCountProcessed > 0) {
+            fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: curBlockNum }));
+            for (const sObj of Object.values(statsCache)) {
+              sObj.data.lastUpdated = new Date().toISOString();
+              fs.writeFileSync(sObj.file, JSON.stringify(sObj.data, null, 2));
+            }
+          }
+        }
+
+        if (isFirstRun && block.timestamp < firstRunCutoff) {
+          console.log(`[${chain}] First-run: reached 1-day history limit at block ${curBlockNum}. Stopping.`);
+          hitTimeLimit = true;
+          break;
+        }
+
+        const blockDateStr = isoDate(block.timestamp);
+
+        for (const tx of (block.prefetchedTransactions || [])) {
+          if (!tx.to) continue;
+          const toAddress = tx.to.toLowerCase();
+          if (!chainsMap[chain].addresses.has(toAddress)) continue;
+
+          const fromAddr = tx.from?.toLowerCase();
+
+          for (const map of chainsMap[chain].mappings[toAddress]) {
+            // ── Tx stats ──
+            const sObj = getStatsObj(map.projectId, toAddress);
+            sObj.data.total   += 1;
+            sObj.data.last24h += 1;
+            if (sObj.data.recentTxs.length < 10) {
+              sObj.data.recentTxs.push({
+                hash: tx.hash, from: tx.from,
+                value: tx.value.toString(),
+                blockNumber: curBlockNum, timeStamp: block.timestamp,
+              });
+            }
+
+            // ── Wallet accumulator (per project, per day) ──
+            if (fromAddr) {
+              if (!chainWallets[map.projectId]) chainWallets[map.projectId] = {};
+              if (!chainWallets[map.projectId][blockDateStr]) chainWallets[map.projectId][blockDateStr] = new Set();
+              chainWallets[map.projectId][blockDateStr].add(fromAddr);
+            }
+          }
+        }
+
+        blockCountProcessed++;
+
+        if (QUICK_MODE && blockCountProcessed >= 1) {
+          console.log(`[${chain}] Quick mode: stopping after 1 block.`);
+          hitTimeLimit = true;
+          break;
+        }
+
+        // ── Time-based stop ──
+        // Adapts to RPC speed and block density. State is checkpointed every
+        // 100 blocks so the next run resumes here with no historical gap.
+        if (Date.now() - scanStartTime >= timeBudgetMs) {
+          console.log(`[${chain}] Time budget (${Math.round(timeBudgetMs / 1000)}s) reached after ${blockCountProcessed} blocks. Resuming next run from block ${curBlockNum}.`);
+          hitTimeLimit = true;
+          break;
+        }
+      }
+
+      targetBlock -= batchNums.length;
+    }
+
+    // ── Save tx stats ──
+    const todayStr = new Date().toISOString().slice(0, 10);
+    for (const sObj of Object.values(statsCache)) {
+      if (!QUICK_MODE) {
+        if (!sObj.data.dailyCounts) sObj.data.dailyCounts = [];
+        const todayEntry = sObj.data.dailyCounts.find(d => d.date === todayStr);
+        if (todayEntry) {
+          todayEntry.count += sObj.data.last24h;
+        } else {
+          sObj.data.dailyCounts.unshift({ date: todayStr, count: sObj.data.last24h });
+        }
+        sObj.data.dailyCounts = sObj.data.dailyCounts.slice(0, 30);
+
+        const yStr   = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const yEntry = sObj.data.dailyCounts.find(d => d.date === yStr);
+        sObj.data.last24h = (todayEntry?.count ?? sObj.data.dailyCounts.find(d => d.date === todayStr)?.count ?? 0)
+                          + (yEntry?.count ?? 0);
+      }
+
+      sObj.data.lastUpdated = new Date().toISOString();
+      fs.writeFileSync(sObj.file, JSON.stringify(sObj.data, null, 2));
+    }
+
+    // ── Save chain state ──
+    fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
+    console.log(`[${chain}] Done. Processed ${blockCountProcessed} blocks.`);
+
+  } catch (err) {
+    console.error(`[${chain}] Fatal error: ${err.message}`);
+  }
+
+  return { chain, chainWallets };
+}
+
 // ── Main scanner ─────────────────────────────────────────────────
 
 async function runScanner() {
@@ -290,244 +503,16 @@ async function runScanner() {
     }
   }
 
-  // Wallet accumulator across all chains (filled during scanning):
-  // { projectId: { 'YYYY-MM-DD': Set<address> } }
-  const walletAccumulator = {};
+  // 3. Scan all chains in parallel.
+  // Each chain builds its own wallet map in memory; wallet saves happen
+  // sequentially afterward to avoid races on shared cross-chain files.
+  const knownChains = Object.keys(chainsMap).filter(c => NETWORK_RPCS[c]);
+  const scanResults = await Promise.all(knownChains.map(chain => scanChain(chain, chainsMap, projects)));
 
-  // 3. Process each chain
-  for (const chain of Object.keys(chainsMap)) {
-    console.log(`\n================ Processing Chain: ${chain} ================`);
-    if (!NETWORK_RPCS[chain]) {
-      console.log(`Skipping unknown chain ${chain}`);
-      continue;
-    }
-
-    const addressesToTrack = Array.from(chainsMap[chain].addresses);
-    console.log(`Tracking ${addressesToTrack.length} contracts on ${chain}`);
-
-    const stateFile = path.join(__dirname, `${chain}_state.json`);
-    let lastProcessedBlock = 0;
-    if (fs.existsSync(stateFile)) {
-      lastProcessedBlock = JSON.parse(fs.readFileSync(stateFile, 'utf8')).lastProcessedBlock || 0;
-    }
-
-    const provider = new RotatingProvider(chain);
-
-    try {
-      const latestBlockNumber = await provider.getLatestBlockNumber();
-      console.log(`[${chain}] Latest block: ${latestBlockNumber}, Last processed: ${lastProcessedBlock || 'None'}`);
-
-      let targetBlock    = latestBlockNumber;
-      const isFirstRun   = lastProcessedBlock === 0;
-      const maxBlocks    = MAX_SCAN_BLOCKS[chain] || DEFAULT_MAX_SCAN_BLOCKS;
-      const timeBudgetMs = CHAIN_TIME_BUDGET_MS[chain] || DEFAULT_CHAIN_TIME_BUDGET_MS;
-
-      // Resume from last saved position — no skip-ahead, preserving full history.
-      // The time budget controls how much we process per run; state is saved on
-      // every checkpoint so the next run resumes exactly where this one stopped.
-      let stopBlock = lastProcessedBlock > 0 ? lastProcessedBlock : 0;
-      const gap = targetBlock - stopBlock;
-      if (gap > 0) {
-        const budgetSec = Math.round(timeBudgetMs / 1000);
-        console.log(`[${chain}] Gap of ${gap} blocks to catch up. Time budget: ${budgetSec}s.`);
-      }
-
-      // Safety: if gap exceeds the hard ceiling (e.g. first run on a chain with
-      // millions of genesis blocks), skip ahead to avoid multi-hour bootstrap.
-      if (gap > maxBlocks) {
-        const newStop = targetBlock - maxBlocks;
-        console.log(`[${chain}] Gap exceeds safety ceiling ${maxBlocks}. Skipping ahead (${stopBlock} → ${newStop}).`);
-        stopBlock = newStop;
-      }
-
-      const firstRunCutoff = isFirstRun
-        ? Math.floor(Date.now() / 1000) - MAX_HISTORY_SECONDS
-        : 0;
-
-      // ── Tx stats cache (per contract) ──
-      const statsCache = {};
-      const getStatsObj = (projectId, contractAdd) => {
-        const sid = `${projectId}_${contractAdd}`;
-        if (statsCache[sid]) return statsCache[sid];
-        const sDir  = path.join(PROJECTS_DIR, projectId, 'stats');
-        if (!fs.existsSync(sDir)) fs.mkdirSync(sDir, { recursive: true });
-        const sFile = path.join(sDir, `${chain}_${contractAdd}.json`);
-        let stats   = { total: 0, last24h: 0, recentTxs: [], dailyCounts: [] };
-        if (fs.existsSync(sFile)) stats = JSON.parse(fs.readFileSync(sFile, 'utf8'));
-        if (!QUICK_MODE) {
-          stats.last24h   = 0;   // reset rolling window on every full run
-          stats.recentTxs = [];  // rebuild from scratch each full run
-        }
-        statsCache[sid] = { file: sFile, data: stats };
-        return statsCache[sid];
-      };
-
-      // Pre-init stats for every tracked contract
-      for (const addr of chainsMap[chain].addresses) {
-        for (const map of chainsMap[chain].mappings[addr]) getStatsObj(map.projectId, addr);
-      }
-
-      // Save latestBlockNumber NOW before touching any blocks.
-      // If the job is cancelled at any point (even block 0), the next run
-      // will correctly resume from this point instead of re-scanning.
-      fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
-
-      let blockCountProcessed = 0;
-      let hitTimeLimit        = false;
-      const totalBlocks       = latestBlockNumber - stopBlock;
-      const scanStartTime     = Date.now();
-      const concurrency       = BLOCK_FETCH_CONCURRENCY[chain] || 1;
-
-      // ── Block scan loop (parallel batch fetching) ──
-      // Each iteration fetches `concurrency` blocks in parallel, then processes them.
-      // This dramatically reduces wall-time on fast chains like Somnia (~0.1s/block).
-      while (targetBlock > stopBlock && !hitTimeLimit) {
-        // Build the batch of block numbers for this iteration
-        const batchNums = [];
-        for (let i = 0; i < concurrency && (targetBlock - i) > stopBlock; i++) {
-          batchNums.push(targetBlock - i);
-        }
-
-        // Fetch all blocks in the batch concurrently
-        const blocks = await Promise.all(batchNums.map(n => provider.fetchBlockWithRetry(n)));
-
-        for (let bi = 0; bi < blocks.length && !hitTimeLimit; bi++) {
-          const block      = blocks[bi];
-          const curBlockNum = batchNums[bi];
-
-          if (!block) { blockCountProcessed++; continue; }
-
-          // ── Progress log + checkpoint every 100 blocks ──
-          if (blockCountProcessed % 100 === 0) {
-            let etaStr = '';
-            if (blockCountProcessed > 0 && totalBlocks > 0) {
-              const elapsed    = Date.now() - scanStartTime;
-              const msPerBlock = elapsed / blockCountProcessed;
-              const remaining  = totalBlocks - blockCountProcessed;
-              const etaSec     = Math.round(msPerBlock * remaining / 1000);
-              const etaMin     = Math.floor(etaSec / 60);
-              etaStr = etaMin > 0
-                ? `  ETA ~${etaMin}m ${etaSec % 60}s  (${blockCountProcessed}/${totalBlocks} blocks)`
-                : `  ETA ~${etaSec}s  (${blockCountProcessed}/${totalBlocks} blocks)`;
-            }
-            console.log(`[${chain}] Scanning block ${curBlockNum} (${new Date(block.timestamp * 1000).toISOString()})...${etaStr}`);
-
-            // Save state so next run resumes here if the process is killed mid-scan.
-            // dailyCounts is NOT updated here — only at end of chain loop.
-            if (blockCountProcessed > 0) {
-              fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: curBlockNum }));
-              for (const sObj of Object.values(statsCache)) {
-                sObj.data.lastUpdated = new Date().toISOString();
-                fs.writeFileSync(sObj.file, JSON.stringify(sObj.data, null, 2));
-              }
-            }
-          }
-
-          if (isFirstRun && block.timestamp < firstRunCutoff) {
-            console.log(`[${chain}] First-run: reached 1-day history limit at block ${curBlockNum}. Stopping.`);
-            hitTimeLimit = true;
-            break;
-          }
-
-          const blockDateStr = isoDate(block.timestamp);
-
-          for (const tx of (block.prefetchedTransactions || [])) {
-            if (!tx.to) continue;
-            const toAddress = tx.to.toLowerCase();
-            if (!chainsMap[chain].addresses.has(toAddress)) continue;
-
-            const fromAddr = tx.from?.toLowerCase();
-
-            for (const map of chainsMap[chain].mappings[toAddress]) {
-              // ── Tx stats ──
-              const sObj = getStatsObj(map.projectId, toAddress);
-              sObj.data.total   += 1;
-              sObj.data.last24h += 1;
-              if (sObj.data.recentTxs.length < 10) {
-                sObj.data.recentTxs.push({
-                  hash: tx.hash, from: tx.from,
-                  value: tx.value.toString(),
-                  blockNumber: curBlockNum, timeStamp: block.timestamp,
-                });
-              }
-
-              // ── Wallet accumulator (per project, per chain, per day) ──
-              if (fromAddr) {
-                if (!walletAccumulator[map.projectId]) walletAccumulator[map.projectId] = {};
-                if (!walletAccumulator[map.projectId][chain]) walletAccumulator[map.projectId][chain] = {};
-                if (!walletAccumulator[map.projectId][chain][blockDateStr])
-                  walletAccumulator[map.projectId][chain][blockDateStr] = new Set();
-                walletAccumulator[map.projectId][chain][blockDateStr].add(fromAddr);
-              }
-            }
-          }
-
-          blockCountProcessed++;
-
-          if (QUICK_MODE && blockCountProcessed >= 1) {
-            console.log(`[${chain}] Quick mode: stopping after 1 block.`);
-            hitTimeLimit = true;
-            break;
-          }
-
-          // ── Time-based stop ──
-          // More reliable than a fixed block count: adapts to RPC speed, network
-          // conditions, and block density. State is checkpointed every 100 blocks
-          // so the next run resumes exactly here with no historical gap.
-          if (Date.now() - scanStartTime >= timeBudgetMs) {
-            console.log(`[${chain}] Time budget (${Math.round(timeBudgetMs / 1000)}s) reached after ${blockCountProcessed} blocks. Resuming next run from block ${curBlockNum}.`);
-            hitTimeLimit = true;
-            break;
-          }
-        }
-
-        targetBlock -= batchNums.length;
-      }
-
-      // ── Save tx stats ──
-      const todayStr = new Date().toISOString().slice(0, 10);
-      for (const sObj of Object.values(statsCache)) {
-        // Update rolling daily counts only on full runs (keeps last 30 days, one entry per day)
-        if (!QUICK_MODE) {
-          if (!sObj.data.dailyCounts) sObj.data.dailyCounts = [];
-          // Accumulate into today's bucket (don't overwrite — scanner may run multiple times/day)
-          const todayEntry = sObj.data.dailyCounts.find(d => d.date === todayStr);
-          if (todayEntry) {
-            todayEntry.count += sObj.data.last24h;
-          } else {
-            sObj.data.dailyCounts.unshift({ date: todayStr, count: sObj.data.last24h });
-          }
-          sObj.data.dailyCounts = sObj.data.dailyCounts.slice(0, 30);
-
-          // Recompute last24h from accumulated today + yesterday buckets
-          const yStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-          const yEntry = sObj.data.dailyCounts.find(d => d.date === yStr);
-          sObj.data.last24h = (todayEntry?.count ?? sObj.data.dailyCounts.find(d => d.date === todayStr)?.count ?? 0)
-                            + (yEntry?.count ?? 0);
-        }
-
-        sObj.data.lastUpdated = new Date().toISOString();
-        fs.writeFileSync(sObj.file, JSON.stringify(sObj.data, null, 2));
-      }
-
-      // ── Save chain state ──
-      fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
-      console.log(`[${chain}] Done. Processed ${blockCountProcessed} blocks.`);
-
-      // ── Flush wallet data for this chain immediately ──
-      // Ensures data is on disk before the next (possibly slow) chain starts.
-      const chainOnlyWallets = {};
-      for (const projId of Object.keys(walletAccumulator)) {
-        if (walletAccumulator[projId][chain]) {
-          chainOnlyWallets[projId] = walletAccumulator[projId][chain];
-        }
-      }
-      saveChainWallets(chain, chainOnlyWallets, projects);
-      console.log(`[${chain}] Wallet data flushed to disk.`);
-
-    } catch (err) {
-      console.error(`[${chain}] Fatal error processing chain: ${err.message}`);
-    }
+  // 4. Flush wallet data sequentially (cross-chain wallets/ files are shared).
+  for (const { chain, chainWallets } of scanResults) {
+    saveChainWallets(chain, chainWallets, projects);
+    console.log(`[${chain}] Wallet data flushed to disk.`);
   }
 
   // 4. Recompute UAW per project (wallet files already flushed after each chain)
