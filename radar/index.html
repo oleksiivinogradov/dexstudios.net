@@ -1,74 +1,50 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Somnia Scanner Radar</title>
-    <!-- Google Fonts for Modern Look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css">
-  </head>
-  <body>
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    
-    <div class="container">
-      <header>
-        <div class="header-content">
-          <div class="live-indicator">
-            <span class="dot pulse"></span>
-            LIVE RADAR
-          </div>
-          <h1>somnia<span class="highlight">scanner</span></h1>
-          <p class="subtitle">0x6CD6978C794ee76d...3B200a39c7E3</p>
-        </div>
-      </header>
 
-      <div class="metrics-grid">
-        <div class="metric-card glass">
-          <div class="metric-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div class="metric-info">
-            <p class="metric-label">Total Selected Tx</p>
-            <h2 class="metric-value fade-in" id="total-tx">--</h2>
-          </div>
-        </div>
-        
-        <div class="metric-card glass">
-          <div class="metric-icon">
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div class="metric-info">
-            <p class="metric-label">Tx Last Hour</p>
-            <h2 class="metric-value fade-in" id="tx-hour">--</h2>
-          </div>
-        </div>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onchain Scanner Directory</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
 
-      <div class="transactions glass">
-        <div class="tx-header">
-          <h3>Latest Transactions</h3>
-          <span class="last-updated" id="last-updated">Last update: --</span>
-        </div>
-        
-        <div class="tx-list" id="tx-list">
-           <!-- Dynamic transactions will be inserted here -->
-           <div class="loading-state">
-              <div class="spinner"></div>
-              <p>Scanning blockchain...</p>
-           </div>
-        </div>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <h1>onchain<span class="highlight">radar</span></h1>
+        <p class="subtitle">Multi-Chain Project Directory</p>
       </div>
+    </header>
+
+    <div class="projects-grid">
+      <a href="./projects/motodex/" class="project-card glass">
+        <img src="./projects/motodex/images/logo.png" alt="MotoDEX"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22><rect width=%22100%22 height=%22100%22 fill=%22%2327272a%22/></svg>'">
+        <h3>MotoDEX</h3>
+        <p>Competitive racing game on the blockchain.</p>
+      </a>
+
+      <a href="./projects/dexgo/" class="project-card glass">
+        <img src="./projects/dexgo/images/logo.png" alt="DexGo"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22><rect width=%22100%22 height=%22100%22 fill=%22%2327272a%22/></svg>'">
+        <h3>DexGo</h3>
+        <p>Move-to-earn and play-to-earn AR platform.</p>
+      </a>
+
+      <a href="./projects/wizverse/" class="project-card glass">
+        <img src="./projects/wizverse/images/logo.png" alt="Wizverse"
+          onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22><rect width=%22100%22 height=%22100%22 fill=%22%2327272a%22/></svg>'">
+        <h3>Wizverse</h3>
+        <p>Immersive magical universe on the blockchain.</p>
+      </a>
     </div>
-    
-    <script type="module" src="./main.js"></script>
-  </body>
+  </div>
+</body>
+
 </html>

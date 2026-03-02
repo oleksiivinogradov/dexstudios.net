@@ -1,0 +1,68 @@
+{
+  "name": "DexGo",
+  "description": "DexGo is a revolutionary move-to-earn and play-to-earn augmented reality platform.",
+  "url": "https://dexgo.com/",
+  "logo": "",
+  "contracts": [
+    {
+      "chain": "polygon",
+      "address": "0xFDfd56127d5389092d291385e20DCD6E8d3e00f7"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x69cb4c8d9CD646F70948C7aF6AAD016Ab4AA9D77"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x7742c473633B8c9a9213211c927579dDB007DE90"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x69fEfA733FF2CB14CB03dd3fc98d8eA51198a283"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x409e196825C92154CC8C4ddC343BDB3Ea7e50D72"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x2b55ad9F144c139c7aFaC315058B7735FCb14258"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x839f7Af90bc2f3f8aeAcc9b87B1E2618Eca8C71C"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x41840F06F301Fd18d3ff7e6c375a762992297722"
+    },
+    {
+      "chain": "polygon",
+      "address": "0x0e383F286bdf2BE9Fde950b8042C61EeF7d1E477"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0xdDE147EcCe74Fe75f0bAccD67B069201E25E8Fe8"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0xb172C9319637149B6918c8323BeB986ee64f5493"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x6e17bEF6871b5C0fd8a07eF4A1222aEaBd7b2f6E"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x86ADB8b5a18156146812363554A8710a11ba2CcD"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x54DB918B7eA57ab1D79F9874B1f5A7A2EAd4e2B9"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x7b1AC460c155ABb6b1D02b543952426A6aaF6b72"
+    }
+  ]
+}

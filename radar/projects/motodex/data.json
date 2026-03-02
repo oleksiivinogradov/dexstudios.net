@@ -1,0 +1,51 @@
+{
+  "name": "MotoDEX",
+  "description": "MotoDEX is a competitive racing game on the blockchain where users participate in motorcycle races, develop their riders, and upgrade high-speed tracks.",
+  "url": "https://motodex.open4se.com/",
+  "logo": "",
+  "contracts": [
+    {
+      "chain": "skale-nebula",
+      "address": "0x3cE4e8Edd002e653aa07b0b239bF5aa3bafde775"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0xDD32347781d20406afA152B0067d67a8119e4d18"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x8E88b33A6d4f31C59677eA55229451b1dc86Fcd9"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x56F57fa49DF41aE11610d362A00819755183733a"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x54bD7f566e05258AcE8eB979e4dbCE5F6376Ff38"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x9ace5e62A42F251b73daac20a6633CBD103b3668"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0xcb9Bc2f109aee02a181132725B6Ba6f0595e8703"
+    },
+    {
+      "chain": "somnia",
+      "address": "0x6CD6978C794ee76d8440CB0a81CF3B200a39c7E3",
+      "note": "MotoDEXnft"
+    },
+    {
+      "chain": "somnia",
+      "address": "0x1c050ea3673fad2Ac2f8559c81f2CD23a9Ec195e",
+      "note": "MotoDEX"
+    },
+    {
+      "chain": "somnia",
+      "address": "0xABa81bdbdBF45Edca8498D90ab1dEb9d85186930",
+      "note": "USDTmoto"
+    }
+  ]
+}

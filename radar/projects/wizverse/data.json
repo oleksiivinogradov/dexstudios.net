@@ -1,0 +1,24 @@
+{
+  "name": "Wizverse",
+  "description": "Wizverse is an immersive universe on the blockchain where players can cast spells and conquer dungeons.",
+  "url": "https://wizverse.com/",
+  "logo": "",
+  "contracts": [
+    {
+      "chain": "skale-nebula",
+      "address": "0x56237ACBe3763c4D5DB585837A1c22ffBe53c55c"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0xB97c1E5255fa6FA898263688cFF9E19796674d96"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x37bE9aB432197AD3cD4E2b3208Fd1FD6a5d59764"
+    },
+    {
+      "chain": "skale-nebula",
+      "address": "0x5e4D6E6F15FEAD25325d10e97289B99dcad3894A"
+    }
+  ]
+}

@@ -1,12 +1,13 @@
 {
     "name": "radar-scanner",
     "version": "1.0.0",
-    "description": "Scanner for Somnia Chain transactions",
+    "description": "Multi-project Block Scanner",
     "main": "index.js",
     "scripts": {
         "start": "node index.js"
     },
     "dependencies": {
-        "axios": "^1.6.0"
+        "axios": "^1.6.0",
+        "ethers": "^6.10.0"
     }
 }
