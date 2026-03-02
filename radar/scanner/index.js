@@ -33,6 +33,15 @@ const CHAIN_AVG_BLOCK_TIME = {
   'polygon':      2,
 };
 
+// Max blocks to scan per chain per run. If the gap is larger, skip ahead.
+// Historical gaps are filled by the backfill script (explorer API).
+const MAX_SCAN_BLOCKS = {
+  'skale-nebula': 2000,  // ~3 sec/block → 2000 = ~100 min of chain time, scans in ~2 min
+  'somnia':       200,   // ~0.1 sec/block → 200 = ~20 sec of chain time, scans in ~20 sec
+  'polygon':      1000,  // ~2 sec/block → 1000 = ~33 min of chain time
+};
+const DEFAULT_MAX_SCAN_BLOCKS = 1000;
+
 const WAIT_TIME_ON_LIMIT = 5000;
 const MAX_HISTORY_SECONDS = 24 * 60 * 60; // 1 day
 const MAX_WALLET_DAYS     = 30;            // keep day-bucket files this many days
@@ -290,10 +299,18 @@ async function runScanner() {
       console.log(`[${chain}] Latest block: ${latestBlockNumber}, Last processed: ${lastProcessedBlock || 'None'}`);
 
       let targetBlock    = latestBlockNumber;
-      const stopBlock    = lastProcessedBlock > 0 ? lastProcessedBlock : 0;
       const isFirstRun   = lastProcessedBlock === 0;
-      // Time limit only applies on first run to bootstrap ~1 day of history.
-      // On subsequent runs we scan ALL missed blocks so the sync never drifts.
+      const maxBlocks    = MAX_SCAN_BLOCKS[chain] || DEFAULT_MAX_SCAN_BLOCKS;
+
+      // Cap the scan range — skip ahead if too far behind
+      let stopBlock = lastProcessedBlock > 0 ? lastProcessedBlock : 0;
+      const gap = targetBlock - stopBlock;
+      if (gap > maxBlocks) {
+        const newStop = targetBlock - maxBlocks;
+        console.log(`[${chain}] Gap of ${gap} blocks exceeds max ${maxBlocks}. Skipping ahead (${stopBlock} → ${newStop}).`);
+        stopBlock = newStop;
+      }
+
       const firstRunCutoff = isFirstRun
         ? Math.floor(Date.now() / 1000) - MAX_HISTORY_SECONDS
         : 0;
