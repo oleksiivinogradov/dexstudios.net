@@ -5,3 +5,4 @@ alwaysApply: true
 here is site dexstudios.net placed on github pages.
 under /radar separated project to scan onchain data
 NEVER use DappRadar's CDN for images
+ANY github actions scripts changes MUST tested local to avoid errors execution on github side after push

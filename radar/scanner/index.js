@@ -513,4 +513,6 @@ async function runScanner() {
   console.log('\nScanner Multi-Project Run Complete!');
 }
 
-runScanner().catch(console.error);
+runScanner()
+  .then(() => process.exit(0))
+  .catch(err => { console.error(err); process.exit(1); });
