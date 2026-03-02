@@ -551,12 +551,6 @@ async function backfillChain(chain, chainsMap, projects) {
         const etaStr  = etaSec > 60
           ? `ETA ~${Math.floor(etaSec / 60)}m ${etaSec % 60}s`
           : `ETA ~${etaSec}s`;
-        console.log(
-          `[${chain}] block ${current + batchNums.length}` +
-          ` | ${processed}/${totalInRange} (${Math.round(bps)}/s)` +
-          ` | ${etaStr}`
-        );
-
         // Flush wallets and stats incrementally so partial work is visible
         flushWallets(chain, chainWallets, projects);
         flushStats(statsCache);
@@ -567,6 +561,12 @@ async function backfillChain(chain, chainsMap, projects) {
         // Save scan position so next run can resume exactly here
         state.inProgress.nextBlock = current;
         saveState(chain, state);
+
+        console.log(
+          `[${chain}] block ${current + batchNums.length}` +
+          ` | ${processed}/${totalInRange} (${Math.round(bps)}/s)` +
+          ` | ${etaStr} | saved`
+        );
 
         if (shutdownRequested) {
           console.log(`[${chain}] Checkpoint saved at block ${current}. Safe to stop.`);
