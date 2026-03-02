@@ -48,6 +48,9 @@ jobs:
           cp radar/index.html dist/radar/
           cp radar/style.css dist/radar/
           cp radar/main.js dist/radar/
+          cp radar/project.css dist/radar/ || true
+          cp radar/project.js dist/radar/ || true
+          cp -r radar/projects dist/radar/projects || true
           cp -r radar/evm dist/radar/evm || true
           
       - name: Setup Pages
