@@ -7,7 +7,7 @@
         "start": "node scrape_dappradar.js"
     },
     "dependencies": {
-        "puppeteer": "^22.0.0",
-        "axios": "^1.6.0"
+        "axios": "^1.6.0",
+        "playwright": "^1.58.2"
     }
 }

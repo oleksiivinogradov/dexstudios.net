@@ -1,8 +1,25 @@
 {
   "name": "Wizverse",
-  "description": "Wizverse is an immersive universe on the blockchain where players can cast spells and conquer dungeons.",
-  "url": "https://wizverse.com/",
-  "logo": "",
+  "description": "Wizverse is an immersive magical universe on the blockchain where players can cast spells and conquer dungeons.",
+  "about": "Wizverse is an immersive magical universe on the blockchain where players can cast spells, conquer dungeons, and earn rewards.\n\nThe game brings high-fantasy RPG gameplay to the blockchain, combining deep strategy with exciting combat mechanics on the gas-free SKALE Network.\n\nKey features:\n\n1. Spell casting system: Master hundreds of unique spells across multiple schools of magic — fire, ice, arcane, and nature. Combine spells to discover powerful combos.\n2. Dungeon exploration: Venture into procedurally generated dungeons filled with monsters, puzzles, and treasure. Each run is unique, keeping the gameplay fresh.\n3. NFT wizards and gear: Own your wizard as a unique NFT with distinct attributes. Equip rare gear, enchanted weapons, and magical artifacts found throughout the world.\n4. Guild system: Join or form guilds to tackle epic raids, share resources, and compete in guild-vs-guild tournaments for massive rewards.\n5. Play-to-earn economy: Earn WIZ tokens through gameplay, trading NFTs, completing quests, and participating in seasonal events.",
+  "url": "https://wizverse.net/",
+  "logo": "images/logo.png",
+  "category": "Games",
+  "rank": "#756 in Games",
+  "dappId": 3,
+  "listedOn": 1697068800,
+  "lastUpdated": 1737676800,
+  "video": "https://www.youtube.com/watch?v=eGw0wWOOpb4",
+  "screenshots": [
+    "images/screenshot1.png",
+    "images/screenshot2.png",
+    "images/screenshot3.png"
+  ],
+  "tags": ["NFT", "RPG", "Games", "Play to Earn", "Fantasy"],
+  "socials": {
+    "telegram": "https://t.me/wizverse_official",
+    "twitter": "https://x.com/wizverse_game"
+  },
   "contracts": [
     {
       "chain": "skale-nebula",

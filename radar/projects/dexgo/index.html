@@ -1,112 +1,262 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Project Radar</title>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Shared Styles -->
-    <link rel="stylesheet" href="../../project.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project – Onchain Radar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../project.css">
 </head>
-
 <body>
-    <!-- Responsive Navbar -->
-    <nav class="navbar">
-        <div class="nav-content">
-            <a href="../../" class="nav-brand">
-                <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L2 22h20L12 2z" />
-                </svg>
-                <span class="brand-text">Onchain<span class="highlight">Radar</span>.Dapp</span>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="../../" class="nav-brand">
+        <svg class="nav-logo-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L2 22h20L12 2z"/>
+        </svg>
+        Onchain<span class="hl">Radar</span>
+      </a>
+      <div class="breadcrumb">
+        <a href="../../">Rankings</a>
+        <span class="bc-sep">›</span>
+        <span class="bc-current" id="bc-current">…</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+    <div class="page-grid">
+
+      <!-- ── Main column ─────────────────────────────────────── -->
+      <div class="main-col">
+
+        <!-- Section 1: Project header with tab panels -->
+        <section class="card">
+          <div class="proj-meta">
+            <img id="project-logo" class="proj-logo" src="" alt="" />
+            <div class="proj-info">
+              <h1 id="project-title"></h1>
+              <div class="proj-badges">
+                <div id="chain-badges"></div>
+                <span id="proj-rank" class="rank-badge"></span>
+              </div>
+              <p id="project-desc" class="proj-desc"></p>
+            </div>
+          </div>
+
+          <nav class="proj-tabs">
+            <button class="tab-btn active" data-tab="overview">Overview</button>
+            <button class="tab-btn" data-tab="nfts">NFTs</button>
+            <button class="tab-btn" data-tab="news">News</button>
+            <button class="tab-btn" data-tab="analytics">Analytics</button>
+            <button class="tab-btn" data-tab="about">About</button>
+          </nav>
+
+          <!-- Overview: video + screenshots -->
+          <div id="panel-overview" class="tab-panel active">
+            <div id="screenshots-grid" class="screenshots-grid"></div>
+          </div>
+
+          <!-- News: X/Twitter latest 3 posts -->
+          <div id="panel-news" class="tab-panel">
+            <div id="twitter-feed" class="twitter-feed-wrap"></div>
+          </div>
+
+          <!-- About: details grid -->
+          <div id="panel-about" class="tab-panel">
+            <h3 class="details-title" id="details-title"></h3>
+            <div class="details-grid">
+              <div class="detail-card">
+                <span class="detail-label">Website</span>
+                <a id="detail-url" class="detail-value detail-link" href="#" target="_blank">
+                  <span id="detail-url-text"></span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+              </div>
+              <div class="detail-card">
+                <span class="detail-label">Listed on DappRadar</span>
+                <span class="detail-value" id="detail-listed"></span>
+              </div>
+              <div class="detail-card">
+                <span class="detail-label">Last updated</span>
+                <span class="detail-value" id="detail-updated"></span>
+              </div>
+              <div class="detail-card">
+                <span class="detail-label">
+                  Dapp ID
+                  <span class="detail-info" title="DappRadar Dapp identifier">ℹ</span>
+                </span>
+                <span class="detail-value" id="detail-dappid"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- NFTs placeholder -->
+          <div id="panel-nfts" class="tab-panel">
+            <div class="tab-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              NFT data coming soon
+            </div>
+          </div>
+
+          <!-- Analytics placeholder -->
+          <div id="panel-analytics" class="tab-panel">
+            <div class="tab-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Advanced analytics coming soon
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: On-chain stats -->
+        <section class="card">
+          <div class="section-top">
+            <div>
+              <div class="section-proj-label" id="stats-proj-label"></div>
+              <h3 class="section-title">On-chain stats</h3>
+            </div>
+          </div>
+          <div class="controls-row">
+            <div class="time-tabs" id="stats-time-tabs">
+              <button class="ttab active" data-period="24h">24h</button>
+              <button class="ttab" data-period="7d">7d</button>
+              <button class="ttab" data-period="30d">30d</button>
+            </div>
+            <div id="chain-filter" class="chain-filter"></div>
+          </div>
+          <div class="stat-cards-grid">
+            <div class="stat-card">
+              <div class="stat-card-header"><span class="stat-label">UAW</span><span class="stat-info" title="Unique Active Wallets">ℹ</span></div>
+              <div class="stat-value" id="stat-uaw">0</div>
+              <div class="stat-change" id="stat-uaw-change">0%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header"><span class="stat-label">Incoming Txs</span><span class="stat-info" title="Total incoming transactions">ℹ</span></div>
+              <div class="stat-value" id="stat-txs">0</div>
+              <div class="stat-change" id="stat-txs-change">0%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header"><span class="stat-label">Incoming Volume</span><span class="stat-info" title="Total volume in USD">ℹ</span></div>
+              <div class="stat-value" id="stat-volume">$0</div>
+              <div class="stat-change" id="stat-volume-change">0%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-header"><span class="stat-label">Contracts Balance</span><span class="stat-info" title="Total balance across tracked contracts">ℹ</span></div>
+              <div class="stat-value" id="stat-balance">--</div>
+              <div class="stat-change" id="stat-balance-change">--</div>
+            </div>
+          </div>
+          <div class="section-footer">
+            <span class="footer-time" id="stats-last-update"></span>
+          </div>
+        </section>
+
+        <!-- Section 3: Historical activity chart -->
+        <section class="card">
+          <div class="chart-top-row">
+            <div>
+              <div class="section-proj-label" id="chart-proj-label"></div>
+              <h3 class="section-title">Historical on-chain activity</h3>
+            </div>
+            <div class="chart-icon-btns">
+              <button class="icon-btn" title="Fullscreen">⛶</button>
+              <button class="icon-btn" title="More options">···</button>
+            </div>
+          </div>
+          <div class="controls-row">
+            <div class="time-tabs" id="chart-time-tabs">
+              <button class="ttab active" data-period="7d">7d</button>
+              <button class="ttab" data-period="30d">30d</button>
+              <button class="ttab" data-period="90d">90d</button>
+              <button class="ttab" data-period="1y">1y</button>
+              <button class="ttab" data-period="all">All</button>
+            </div>
+            <div id="chart-chain-filter" class="chain-filter"></div>
+          </div>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-dot white"></span> UAW</span>
+            <span class="legend-item"><span class="legend-dot blue"></span> Volume</span>
+            <span class="legend-item"><span class="legend-dot teal"></span> Transactions</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="activity-chart"></canvas>
+          </div>
+          <div class="section-footer">
+            <span class="footer-time" id="chart-last-update"></span>
+            <button class="ai-btn">✦ AI Insights <span class="pro-badge">PRO</span></button>
+          </div>
+        </section>
+
+        <!-- Section 4: What is X? -->
+        <section class="card" id="about-section">
+          <h2 class="about-title" id="about-title"></h2>
+          <hr class="divider" />
+          <div class="about-text" id="about-text"></div>
+          <div class="about-website">
+            Website: <a id="about-url" href="#" target="_blank"></a>
+          </div>
+          <div class="about-tags">
+            <span class="tags-label">Tags</span>
+            <div id="about-tags-list"></div>
+          </div>
+          <div class="back-to-top-row">
+            <a class="back-to-top" href="#"
+               onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+              Back to top ↑
             </a>
+          </div>
+        </section>
+
+      </div><!-- /main-col -->
+
+      <!-- ── Sidebar ─────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <a id="open-dapp-btn" href="#" target="_blank" class="open-dapp-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          Open dapp
+        </a>
+
+        <div class="sidebar-actions">
+          <button class="action-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            Watch
+          </button>
+          <button class="action-btn" id="share-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            Share
+          </button>
+          <button class="action-btn" id="report-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+              <line x1="4" y1="22" x2="4" y2="15"/>
+            </svg>
+            Report
+          </button>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="container">
-        <!-- Project Header / Hero -->
-        <section class="project-hero glass">
-            <div class="hero-left">
-                <img id="project-logo" src="" alt="Project Logo" class="project-img placeholder-pulse" />
-                <div class="hero-info">
-                    <h1 id="project-title" class="placeholder-text">Loading...</h1>
-                    <p id="project-desc" class="placeholder-text-p"></p>
-                    <div id="chain-badges" class="badges">
-                        <!-- Dynamically populated chains -->
-                    </div>
-                    <a id="project-url" href="#" target="_blank" class="cta-link">
-                        Open DApp
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </a>
-                </div>
-            </div>
-            <div class="hero-right">
-                <!-- Live Status -->
-                <div class="live-status">
-                    <span class="pulse-dot"></span> LIVE ON-CHAIN
-                </div>
-            </div>
-        </section>
+        <div class="card sidebar-card">
+          <h4>Socials</h4>
+          <div class="socials-list" id="socials-list"></div>
+        </div>
+      </aside>
 
-        <!-- Key Metrics -->
-        <section class="metrics-grid">
-            <div class="metric-card glass">
-                <span class="m-label">Total Selected Tx</span>
-                <h2 class="m-value" id="stat-total">--</h2>
-            </div>
-            <div class="metric-card glass">
-                <span class="m-label">Tx Last 24H</span>
-                <h2 class="m-value" id="stat-24h">--</h2>
-            </div>
-            <div class="metric-card glass">
-                <span class="m-label">Tracked Contracts</span>
-                <h2 class="m-value" id="stat-contracts">--</h2>
-            </div>
-        </section>
+    </div><!-- /page-grid -->
+  </div><!-- /page-wrapper -->
 
-        <!-- Transactions -->
-        <section class="tx-section glass">
-            <div class="tx-header">
-                <h3>Latest Transactions</h3>
-                <span id="last-updated" class="last-updated">Updating...</span>
-            </div>
-            <div class="table-container">
-                <table class="tx-table">
-                    <thead>
-                        <tr>
-                            <th>Hash</th>
-                            <th>Chain</th>
-                            <th>Contract</th>
-                            <th>Block</th>
-                            <th class="right-align">Age</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tx-body">
-                        <tr>
-                            <td colspan="5" class="loading-state">
-                                <div class="spinner"></div>
-                                Scanning blockchain data...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </main>
-
-    <!-- Background Effects -->
-    <div class="bg-glow glow-1"></div>
-    <div class="bg-glow glow-2"></div>
-
-    <!-- Script that uses relative path '.' to fetch data -->
-    <script type="module" src="../../project.js"></script>
+  <script type="module" src="../../project.js"></script>
 </body>
-
 </html>

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { JsonRpcProvider } = require('ethers'); // Ethers v6
 
-// Silence ethers.js internal network detection warnings that spam the console
+// Silence ethers.js internal network detection warnings
 const originalLog = console.log;
 console.log = function (...args) {
   if (typeof args[0] === 'string' && args[0].includes('JsonRpcProvider failed to detect network')) return;
@@ -11,7 +11,6 @@ console.log = function (...args) {
 
 const PROJECTS_DIR = path.join(__dirname, '..', 'projects');
 
-// DefiLlama Chainlist is cloned in ../chainlist but for stability & speed we map the specific chains directly
 const NETWORK_RPCS = {
   'skale-nebula': [
     'https://mainnet.skalenodes.com/v1/green-giddy-denebola'
@@ -28,12 +27,124 @@ const NETWORK_RPCS = {
 
 const WAIT_TIME_ON_LIMIT = 5000;
 const MAX_HISTORY_SECONDS = 24 * 60 * 60; // 1 day
+const MAX_WALLET_DAYS     = 30;            // keep day-bucket files this many days
+
+// --quick flag: scan only 1 block to verify the pipeline works
+const QUICK_MODE = process.argv.includes('--quick');
+if (QUICK_MODE) console.log('⚡ QUICK MODE: scanning 1 block per chain only');
 
 async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Custom Provider with Rotation
+// ── Wallet bucket helpers ────────────────────────────────────────
+
+/** ISO date string (YYYY-MM-DD) from a unix timestamp (seconds) */
+function isoDate(tsSeconds) {
+  return new Date(tsSeconds * 1000).toISOString().slice(0, 10);
+}
+
+/** ISO date string for N days ago (from today) */
+function daysAgoStr(n) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+function loadDayBucket(walletsDir, dateStr) {
+  const f = path.join(walletsDir, `${dateStr}.json`);
+  if (!fs.existsSync(f)) return new Set();
+  return new Set(JSON.parse(fs.readFileSync(f, 'utf8')));
+}
+
+function saveDayBucket(walletsDir, dateStr, walletSet) {
+  fs.mkdirSync(walletsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(walletsDir, `${dateStr}.json`),
+    JSON.stringify(Array.from(walletSet).sort())
+  );
+}
+
+/**
+ * alltime.json is a plain object used as a hash-set: { "0xabc": 1, ... }
+ * Key lookup is O(1) — no linear scan needed regardless of file size.
+ */
+function loadAlltime(walletsDir) {
+  const f = path.join(walletsDir, 'alltime.json');
+  if (!fs.existsSync(f)) return {};
+  return JSON.parse(fs.readFileSync(f, 'utf8'));
+}
+
+function saveAlltime(walletsDir, obj) {
+  fs.mkdirSync(walletsDir, { recursive: true });
+  fs.writeFileSync(path.join(walletsDir, 'alltime.json'), JSON.stringify(obj));
+}
+
+/** Delete day-bucket files older than MAX_WALLET_DAYS */
+function pruneOldBuckets(walletsDir) {
+  if (!fs.existsSync(walletsDir)) return;
+  const cutoff = daysAgoStr(MAX_WALLET_DAYS);
+  const files = fs.readdirSync(walletsDir).filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f));
+  for (const f of files) {
+    if (f.slice(0, 10) < cutoff) {  // ISO string comparison works correctly
+      fs.unlinkSync(path.join(walletsDir, f));
+      console.log(`  Pruned old wallet bucket: ${f}`);
+    }
+  }
+}
+
+/**
+ * Union the last N day-buckets and return the count of unique wallets.
+ * Only loads files that exist — no error if a day has no data.
+ */
+function unionDays(walletsDir, n) {
+  const union = new Set();
+  for (let i = 0; i < n; i++) {
+    const bucket = loadDayBucket(walletsDir, daysAgoStr(i));
+    for (const w of bucket) union.add(w);
+  }
+  return union.size;
+}
+
+/**
+ * Recompute UAW for all windows and write uaw.json next to data.json.
+ * Called after wallet files are updated for the project.
+ */
+function computeAndSaveUAW(projectPath) {
+  const walletsDir = path.join(projectPath, 'wallets');
+  const alltime    = loadAlltime(walletsDir);
+  const uaw = {
+    // "24h" = today + yesterday to correctly cover the full rolling 24-hour window
+    uaw24h:     unionDays(walletsDir, 2),
+    uaw7d:      unionDays(walletsDir, 7),
+    uaw30d:     unionDays(walletsDir, 30),
+    uawAlltime: Object.keys(alltime).length,
+    byChain:    {},
+    lastUpdated: new Date().toISOString(),
+  };
+
+  // Per-chain UAW from wallets/{chain}/ subdirectories
+  if (fs.existsSync(walletsDir)) {
+    for (const entry of fs.readdirSync(walletsDir)) {
+      const chainDir = path.join(walletsDir, entry);
+      if (fs.statSync(chainDir).isDirectory()) {
+        const chainAlltime = loadAlltime(chainDir);
+        uaw.byChain[entry] = {
+          uaw24h:     unionDays(chainDir, 2),
+          uaw7d:      unionDays(chainDir, 7),
+          uaw30d:     unionDays(chainDir, 30),
+          uawAlltime: Object.keys(chainAlltime).length,
+        };
+      }
+    }
+  }
+
+  fs.writeFileSync(path.join(projectPath, 'uaw.json'), JSON.stringify(uaw, null, 2));
+  return uaw;
+}
+
+// ── RotatingProvider ─────────────────────────────────────────────
+
 class RotatingProvider {
   constructor(network) {
     this.network = network;
@@ -52,14 +163,10 @@ class RotatingProvider {
   async fetchBlockWithRetry(blockNumber, retries = 3) {
     for (let i = 0; i < retries; i++) {
       try {
-        // Returns block with prefetched transactions
-        const block = await this.provider.getBlock(blockNumber, true);
-        return block;
+        return await this.provider.getBlock(blockNumber, true);
       } catch (err) {
-        console.error(`[${this.network}] Error fetching block ${blockNumber} on RPC ${this.rpcs[this.currentIndex]}: ${err.message}`);
-        if (err.message.includes('rate') || err.message.includes('429')) {
-          this.rotate();
-        }
+        console.error(`[${this.network}] Error fetching block ${blockNumber}: ${err.message}`);
+        if (err.message.includes('rate') || err.message.includes('429')) this.rotate();
         await delay(WAIT_TIME_ON_LIMIT);
       }
     }
@@ -75,47 +182,40 @@ class RotatingProvider {
   }
 }
 
-async function runScanner() {
-  console.log("Starting Multi-Project RPC Block Scanner...");
+// ── Main scanner ─────────────────────────────────────────────────
 
-  // 1. Load All Projects
+async function runScanner() {
+  console.log('Starting Multi-Project RPC Block Scanner...');
+
+  // 1. Load all projects
   const projects = [];
-  const dirs = fs.readdirSync(PROJECTS_DIR);
-  for (const d of dirs) {
+  for (const d of fs.readdirSync(PROJECTS_DIR)) {
     const pPath = path.join(PROJECTS_DIR, d);
-    if (fs.statSync(pPath).isDirectory()) {
-      const dataFile = path.join(pPath, 'data.json');
-      if (fs.existsSync(dataFile)) {
-        projects.push({
-          id: d,
-          path: pPath,
-          data: JSON.parse(fs.readFileSync(dataFile, 'utf8'))
-        });
-      }
+    if (!fs.statSync(pPath).isDirectory()) continue;
+    const dataFile = path.join(pPath, 'data.json');
+    if (fs.existsSync(dataFile)) {
+      projects.push({ id: d, path: pPath, data: JSON.parse(fs.readFileSync(dataFile, 'utf8')) });
     }
   }
 
-  // 2. Group Contracts by Chain
-  // chain => { contracts_lowercase: Set, projects_map: { contract_lowercase => [ { projectId, network, address } ] } }
+  // 2. Group contracts by chain
   const chainsMap = {};
   for (const proj of projects) {
     for (const contract of (proj.data.contracts || [])) {
-      const chain = contract.chain;
+      const chain   = contract.chain;
       const address = contract.address.toLowerCase();
-
-      if (!chainsMap[chain]) {
-        chainsMap[chain] = {
-          addresses: new Set(),
-          mappings: {}
-        };
-      }
+      if (!chainsMap[chain]) chainsMap[chain] = { addresses: new Set(), mappings: {} };
       chainsMap[chain].addresses.add(address);
       if (!chainsMap[chain].mappings[address]) chainsMap[chain].mappings[address] = [];
       chainsMap[chain].mappings[address].push({ projectId: proj.id, ...contract });
     }
   }
 
-  // 3. Process Each Chain
+  // Wallet accumulator across all chains (filled during scanning):
+  // { projectId: { 'YYYY-MM-DD': Set<address> } }
+  const walletAccumulator = {};
+
+  // 3. Process each chain
   for (const chain of Object.keys(chainsMap)) {
     console.log(`\n================ Processing Chain: ${chain} ================`);
     if (!NETWORK_RPCS[chain]) {
@@ -126,8 +226,6 @@ async function runScanner() {
     const addressesToTrack = Array.from(chainsMap[chain].addresses);
     console.log(`Tracking ${addressesToTrack.length} contracts on ${chain}`);
 
-    // We need persistence logic for tracking blocks globally per chain
-    // Let's store a chain_state.json in radar/scanner/
     const stateFile = path.join(__dirname, `${chain}_state.json`);
     let lastProcessedBlock = 0;
     if (fs.existsSync(stateFile)) {
@@ -140,76 +238,85 @@ async function runScanner() {
       const latestBlockNumber = await provider.getLatestBlockNumber();
       console.log(`[${chain}] Latest block: ${latestBlockNumber}, Last processed: ${lastProcessedBlock || 'None'}`);
 
-      let targetBlock = latestBlockNumber;
-      const stopBlock = lastProcessedBlock > 0 ? lastProcessedBlock : 0;
+      let targetBlock    = latestBlockNumber;
+      const stopBlock    = lastProcessedBlock > 0 ? lastProcessedBlock : 0;
+      const isFirstRun   = lastProcessedBlock === 0;
+      // Time limit only applies on first run to bootstrap ~1 day of history.
+      // On subsequent runs we scan ALL missed blocks so the sync never drifts.
+      const firstRunCutoff = isFirstRun
+        ? Math.floor(Date.now() / 1000) - MAX_HISTORY_SECONDS
+        : 0;
 
-      const oneDayAgo = Math.floor(Date.now() / 1000) - MAX_HISTORY_SECONDS;
-
-      // Statistics per project/contract
-      // We load existing stats to append totals, but replace recent txs.
+      // ── Tx stats cache (per contract) ──
       const statsCache = {};
       const getStatsObj = (projectId, contractAdd) => {
         const sid = `${projectId}_${contractAdd}`;
         if (statsCache[sid]) return statsCache[sid];
-
-        const sDir = path.join(PROJECTS_DIR, projectId, 'stats');
+        const sDir  = path.join(PROJECTS_DIR, projectId, 'stats');
         if (!fs.existsSync(sDir)) fs.mkdirSync(sDir, { recursive: true });
         const sFile = path.join(sDir, `${chain}_${contractAdd}.json`);
-
-        let stats = { total: 0, last24h: 0, recentTxs: [] };
-        if (fs.existsSync(sFile)) {
-          stats = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+        let stats   = { total: 0, last24h: 0, recentTxs: [], dailyCounts: [] };
+        if (fs.existsSync(sFile)) stats = JSON.parse(fs.readFileSync(sFile, 'utf8'));
+        if (!QUICK_MODE) {
+          stats.last24h   = 0;   // reset rolling window on every full run
+          stats.recentTxs = [];  // rebuild from scratch each full run
         }
-        // Reset last24h and recent on every run, total accumulates
-        stats.last24h = 0;
         statsCache[sid] = { file: sFile, data: stats };
         return statsCache[sid];
       };
 
-      let blockCountProcessed = 0;
-      let hitTimeLimit = false;
+      // Pre-init stats for every tracked contract
+      for (const addr of chainsMap[chain].addresses) {
+        for (const map of chainsMap[chain].mappings[addr]) getStatsObj(map.projectId, addr);
+      }
 
-      // Block Scan Loop
+      let blockCountProcessed = 0;
+      let hitTimeLimit        = false;
+
+      // ── Block scan loop ──
       while (targetBlock > stopBlock && !hitTimeLimit) {
-        // Fetch Block
         const block = await provider.fetchBlockWithRetry(targetBlock);
-        if (!block) {
-          targetBlock--;
-          continue;
-        }
+        if (!block) { targetBlock--; continue; }
 
         if (blockCountProcessed % 100 === 0) {
           console.log(`[${chain}] Scanning block ${targetBlock} (${new Date(block.timestamp * 1000).toISOString()})...`);
         }
 
-        if (block.timestamp < oneDayAgo) {
-          console.log(`[${chain}] Reached 1-day history limit at block ${targetBlock}. Stopping.`);
+        if (isFirstRun && block.timestamp < firstRunCutoff) {
+          console.log(`[${chain}] First-run: reached 1-day history limit at block ${targetBlock}. Stopping.`);
           hitTimeLimit = true;
           break;
         }
 
-        // Pre-fetched transactions in block object for ether v6
-        for (const tx of block.prefetchedTransactions || []) {
-          if (tx.to && chainsMap[chain].addresses.has(tx.to.toLowerCase())) {
-            // Found a transaction!
-            const toAddress = tx.to.toLowerCase();
-            const mappings = chainsMap[chain].mappings[toAddress];
+        const blockDateStr = isoDate(block.timestamp);
 
-            for (const map of mappings) {
-              const sObj = getStatsObj(map.projectId, toAddress);
-              sObj.data.total += 1;
-              sObj.data.last24h += 1;
+        for (const tx of (block.prefetchedTransactions || [])) {
+          if (!tx.to) continue;
+          const toAddress = tx.to.toLowerCase();
+          if (!chainsMap[chain].addresses.has(toAddress)) continue;
 
-              // Keep top 10
-              if (sObj.data.recentTxs.length < 10) {
-                sObj.data.recentTxs.push({
-                  hash: tx.hash,
-                  from: tx.from,
-                  value: tx.value.toString(),
-                  blockNumber: targetBlock,
-                  timeStamp: block.timestamp
-                });
-              }
+          const fromAddr = tx.from?.toLowerCase();
+
+          for (const map of chainsMap[chain].mappings[toAddress]) {
+            // ── Tx stats ──
+            const sObj = getStatsObj(map.projectId, toAddress);
+            sObj.data.total   += 1;
+            sObj.data.last24h += 1;
+            if (sObj.data.recentTxs.length < 10) {
+              sObj.data.recentTxs.push({
+                hash: tx.hash, from: tx.from,
+                value: tx.value.toString(),
+                blockNumber: targetBlock, timeStamp: block.timestamp,
+              });
+            }
+
+            // ── Wallet accumulator (per project, per chain, per day) ──
+            if (fromAddr) {
+              if (!walletAccumulator[map.projectId]) walletAccumulator[map.projectId] = {};
+              if (!walletAccumulator[map.projectId][chain]) walletAccumulator[map.projectId][chain] = {};
+              if (!walletAccumulator[map.projectId][chain][blockDateStr])
+                walletAccumulator[map.projectId][chain][blockDateStr] = new Set();
+              walletAccumulator[map.projectId][chain][blockDateStr].add(fromAddr);
             }
           }
         }
@@ -217,36 +324,45 @@ async function runScanner() {
         targetBlock--;
         blockCountProcessed++;
 
-        // Safety exit for GitHub Actions (don't run forever if chain is massive like polygon)
-        // We'll limit to 5000 blocks per manual scan to avoid 6hr timeout, 
-        // Polygon does 40k a day, 5000 takes ~5-10 mins. 
-        // Next run will pick up where it left off!
+        if (QUICK_MODE && blockCountProcessed >= 1) {
+          console.log(`[${chain}] Quick mode: stopping after 1 block.`);
+          break;
+        }
+
         if (blockCountProcessed >= 1500 && lastProcessedBlock === 0) {
-          console.log(`[${chain}] Reached max 1500 blocks for a single bootstrapping run. Will continue next cycle.`);
+          console.log(`[${chain}] Reached max 1500 blocks for bootstrapping run. Will continue next cycle.`);
           break;
         }
       }
 
-      // Save Stats
-      for (const key of Object.keys(statsCache)) {
-        const sObj = statsCache[key];
+      // ── Save tx stats ──
+      const todayStr = new Date().toISOString().slice(0, 10);
+      for (const sObj of Object.values(statsCache)) {
+        // Update rolling daily counts only on full runs (keeps last 30 days, one entry per day)
+        if (!QUICK_MODE) {
+          if (!sObj.data.dailyCounts) sObj.data.dailyCounts = [];
+          // Accumulate into today's bucket (don't overwrite — scanner may run multiple times/day)
+          const todayEntry = sObj.data.dailyCounts.find(d => d.date === todayStr);
+          if (todayEntry) {
+            todayEntry.count += sObj.data.last24h;
+          } else {
+            sObj.data.dailyCounts.unshift({ date: todayStr, count: sObj.data.last24h });
+          }
+          sObj.data.dailyCounts = sObj.data.dailyCounts.slice(0, 30);
+
+          // Recompute last24h from accumulated today + yesterday buckets
+          const yStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+          const yEntry = sObj.data.dailyCounts.find(d => d.date === yStr);
+          sObj.data.last24h = (todayEntry?.count ?? sObj.data.dailyCounts.find(d => d.date === todayStr)?.count ?? 0)
+                            + (yEntry?.count ?? 0);
+        }
+
         sObj.data.lastUpdated = new Date().toISOString();
         fs.writeFileSync(sObj.file, JSON.stringify(sObj.data, null, 2));
       }
 
-      // Save Chain State (where we left off, or the highest block we scraped)
-      // If we didn't hit time limit or block restriction, our new "last processed" is the latest block.
-      // Actually, we should always save latestBlockNumber so we don't rescan things we already scanned
-      if (lastProcessedBlock === 0) {
-        // If it was the first run, we only went back 1500 blocks. 
-        // So the new "last processed" should be latestBlockNumber. Wait no, if we set it to latest, we skip the remaining gap!
-        // To keep it simple, we don't care about the gap. We care about LIVE data.
-        // We set lastProcessedBlock to latestBlockNumber.
-        fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
-      } else {
-        fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
-      }
-
+      // ── Save chain state ──
+      fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
       console.log(`[${chain}] Done. Processed ${blockCountProcessed} blocks.`);
 
     } catch (err) {
@@ -254,7 +370,84 @@ async function runScanner() {
     }
   }
 
-  console.log("Scanner Multi-Project Run Complete!");
+  // 4. After all chains: update wallet files and compute UAW per project
+  console.log('\n================ Updating UAW data ================');
+  for (const proj of projects) {
+    const walletsDir  = path.join(proj.path, 'wallets');
+    // projWallets: { chain: { dateStr: Set<addr> } }
+    const projWallets = walletAccumulator[proj.id] || {};
+
+    // Cross-chain alltime accumulator (filled while iterating chains below)
+    const alltime  = loadAlltime(walletsDir);
+    let   newCount = 0;
+
+    for (const [ch, chainDates] of Object.entries(projWallets)) {
+      const chainWalletsDir = path.join(walletsDir, ch);
+
+      // ── Per-chain day-bucket files (wallets/{chain}/YYYY-MM-DD.json) ──
+      const chainAlltime  = loadAlltime(chainWalletsDir);
+      let   chainNewCount = 0;
+      for (const [dateStr, newSet] of Object.entries(chainDates)) {
+        const existing = loadDayBucket(chainWalletsDir, dateStr);
+        for (const w of newSet) existing.add(w);
+        saveDayBucket(chainWalletsDir, dateStr, existing);
+      }
+      for (const walletSet of Object.values(chainDates)) {
+        for (const w of walletSet) {
+          if (!(w in chainAlltime)) { chainAlltime[w] = 1; chainNewCount++; }
+        }
+      }
+      if (chainNewCount > 0) saveAlltime(chainWalletsDir, chainAlltime);
+      pruneOldBuckets(chainWalletsDir);
+
+      // ── Cross-chain day-bucket files (wallets/YYYY-MM-DD.json) ──
+      for (const [dateStr, newSet] of Object.entries(chainDates)) {
+        const existing = loadDayBucket(walletsDir, dateStr);
+        for (const w of newSet) existing.add(w);
+        saveDayBucket(walletsDir, dateStr, existing);
+      }
+      for (const walletSet of Object.values(chainDates)) {
+        for (const w of walletSet) {
+          if (!(w in alltime)) { alltime[w] = 1; newCount++; }
+        }
+      }
+    }
+
+    if (newCount > 0) saveAlltime(walletsDir, alltime);
+    pruneOldBuckets(walletsDir);
+
+    // Compute and save UAW summary (includes byChain breakdown)
+    const uaw = computeAndSaveUAW(proj.path);
+    const chainSummary = Object.entries(uaw.byChain)
+      .map(([c, v]) => `${c}:${v.uaw24h}`).join(' ');
+    console.log(`[${proj.id}] UAW → 24h: ${uaw.uaw24h}  7d: ${uaw.uaw7d}  30d: ${uaw.uaw30d}  alltime: ${uaw.uawAlltime}  byChain(24h): ${chainSummary || 'none'}`);
+  }
+
+  // 5. Rebuild ranking.json (total txs per project, across all chains)
+  console.log('\n================ Updating ranking.json ================');
+  const rankingPath = path.join(PROJECTS_DIR, 'ranking.json');
+  const ranking = projects.map(proj => {
+    const statsDir = path.join(proj.path, 'stats');
+    let totalTxs = 0;
+    if (fs.existsSync(statsDir)) {
+      for (const file of fs.readdirSync(statsDir).filter(f => f.endsWith('.json'))) {
+        try {
+          const s = JSON.parse(fs.readFileSync(path.join(statsDir, file), 'utf8'));
+          totalTxs += s.total || 0;
+        } catch { /* skip corrupted file */ }
+      }
+    }
+    return {
+      name:     proj.data.name,
+      category: proj.data.category || 'Games',
+      totalTxs,
+    };
+  });
+  ranking.sort((a, b) => b.totalTxs - a.totalTxs);
+  fs.writeFileSync(rankingPath, JSON.stringify(ranking, null, 2));
+  console.log('ranking.json updated:', ranking.map(r => `${r.name}=${r.totalTxs}`).join(', '));
+
+  console.log('\nScanner Multi-Project Run Complete!');
 }
 
 runScanner().catch(console.error);

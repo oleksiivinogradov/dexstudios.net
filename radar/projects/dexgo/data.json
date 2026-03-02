@@ -1,8 +1,25 @@
 {
   "name": "DexGo",
-  "description": "DexGo is a revolutionary move-to-earn and play-to-earn augmented reality platform.",
-  "url": "https://dexgo.com/",
-  "logo": "",
+  "description": "DexGo is a revolutionary move-to-earn and play-to-earn augmented reality platform that rewards users for physical activity.",
+  "about": "DexGo is a revolutionary move-to-earn and play-to-earn augmented reality platform built on blockchain technology.\n\nThe game combines physical activity with blockchain rewards, allowing players to earn crypto tokens by walking, jogging, or running through their own cities using virtual NFT sneakers in augmented reality.\n\nKey features:\n\n1. Move-to-Earn mechanics: Every step counts. Walk or run in real-world environments and earn DXG tokens as rewards for your physical activity.\n2. Augmented Reality gameplay: Explore your city through the lens of AR, discovering hidden treasures, completing quests, and interacting with other players in the real world.\n3. NFT sneakers: Equip unique NFT sneakers that boost your earning potential and can be upgraded, traded, or rented on the marketplace.\n4. Zero gas fees: Built on SKALE Network, all in-game transactions are completely free, removing barriers to entry for new players.\n5. Social features: Form teams, compete in leaderboards, and participate in community events for bonus rewards.",
+  "url": "https://www.dexgo.club/",
+  "logo": "images/logo.png",
+  "category": "Games",
+  "rank": "#1023 in Games",
+  "dappId": 2,
+  "listedOn": 1682294400,
+  "lastUpdated": 1737676800,
+  "video": "https://www.youtube.com/watch?v=Jci7RCWepek",
+  "screenshots": [
+    "images/screenshot1.png",
+    "images/screenshot2.png",
+    "images/screenshot3.png"
+  ],
+  "tags": ["Move to Earn", "AR", "Games", "Play to Earn", "NFT"],
+  "socials": {
+    "telegram": "https://t.me/dexgo_official",
+    "twitter": "https://x.com/dexgo_game"
+  },
   "contracts": [
     {
       "chain": "polygon",

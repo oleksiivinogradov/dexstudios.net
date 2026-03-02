@@ -35,16 +35,21 @@ jobs:
         working-directory: ./radar/scanner
         run: npm start
         
-      - name: Commit Updated Aggregation Data
+      - name: Commit Updated Scanner Data
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add radar/evm/50312/0x6CD6978C794ee76d8440CB0a81CF3B200a39c7E3/aggregation.json
-          
-          # Only commit and push if there are changes
-          if ! git diff --staged --empty; then
-            git commit -m "chore(radar): auto-update Somnia network transactions data"
-            git push
+          git add \
+            radar/projects/*/stats/*.json \
+            radar/projects/*/wallets/**/*.json \
+            radar/projects/*/wallets/*.json \
+            radar/projects/*/uaw.json \
+            radar/projects/ranking.json \
+            radar/scanner/*_state.json
+
+          if git diff --staged --quiet; then
+            echo "No scanner data changes detected."
           else
-            echo "No changes to aggregation.json detected."
+            git commit -m "chore(radar): scanner sync $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
           fi

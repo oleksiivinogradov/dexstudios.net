@@ -1,155 +1,173 @@
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-const PROJECTS = [
-    { name: 'motodex', url: 'https://dappradar.com/dapp/motodex' },
-    { name: 'dexgo', url: 'https://dappradar.com/dapp/dexgo' },
-    { name: 'wizverse', url: 'https://dappradar.com/dapp/wizverse' }
-];
-
 const PROJECTS_DIR = path.join(__dirname, '..', 'projects');
 
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
 async function downloadImage(url, destPath) {
-    try {
-        const response = await axios({
-            url,
-            method: 'GET',
-            responseType: 'stream'
-        });
-        return new Promise((resolve, reject) => {
-            response.data.pipe(fs.createWriteStream(destPath))
-                .on('finish', () => resolve())
-                .on('error', e => reject(e));
-        });
-    } catch (error) {
-        console.error(`Error downloading image ${url}:`, error.message);
-    }
+    const response = await axios({
+        url,
+        method: 'GET',
+        responseType: 'stream',
+        headers: { 'User-Agent': UA },
+        timeout: 15000
+    });
+    return new Promise((resolve, reject) => {
+        response.data.pipe(fs.createWriteStream(destPath))
+            .on('finish', resolve)
+            .on('error', reject);
+    });
 }
 
-async function scrapeProject(browser, project) {
-    console.log(`Scraping ${project.name}...`);
-    const page = await browser.newPage();
+function extractMetaContent(html, ...names) {
+    for (const name of names) {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const patterns = [
+            new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["']`, 'i'),
+            new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["']`, 'i'),
+        ];
+        for (const re of patterns) {
+            const m = html.match(re);
+            if (m && m[1] && !m[1].startsWith('data:')) return m[1].trim();
+        }
+    }
+    return null;
+}
 
-    // Set user agent to avoid basic bot protections
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+function extractAppleTouchIcon(html, base) {
+    // Prefer sizes="180x180" or largest available
+    const re = /<link[^>]+rel=["']apple-touch-icon["'][^>]+href=["']([^"']+)["'][^>]*>/gi;
+    let best = null;
+    let bestSize = 0;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+        const href = m[1];
+        const sizeM = m[0].match(/sizes=["'](\d+)x\d+["']/i);
+        const sz = sizeM ? parseInt(sizeM[1]) : 1;
+        if (sz > bestSize) { bestSize = sz; best = href; }
+    }
+    if (!best) return null;
+    if (best.startsWith('//')) return 'https:' + best;
+    if (best.startsWith('http')) return best;
+    return new URL(best, base).toString();
+}
+
+async function fetchLogoUrl(projectUrl) {
+    console.log(`  Fetching HTML: ${projectUrl}`);
+    const res = await axios.get(projectUrl, {
+        headers: { 'User-Agent': UA },
+        timeout: 20000,
+        maxRedirects: 5
+    });
+    const html = res.data;
+    const base = new URL(projectUrl);
+
+    // Prefer og:image / twitter:image
+    const ogImage = extractMetaContent(html, 'og:image', 'twitter:image', 'twitter:image:src');
+    if (ogImage) {
+        return ogImage.startsWith('http') ? ogImage : new URL(ogImage, base).toString();
+    }
+
+    // Fall back to apple-touch-icon (typically square, brand logo)
+    const ati = extractAppleTouchIcon(html, base);
+    if (ati) {
+        console.log(`  Using apple-touch-icon: ${ati}`);
+        return ati;
+    }
+
+    return null;
+}
+
+async function fetchLogoUrlClearbit(domain) {
+    const url = `https://logo.clearbit.com/${domain}?size=120`;
+    console.log(`  Trying Clearbit: ${url}`);
+    // HEAD request to check if logo exists (returns 200 or 404)
+    await axios.head(url, { timeout: 10000 });
+    return url;
+}
+
+async function scrapeProject(projectName) {
+    const projDir = path.join(PROJECTS_DIR, projectName);
+    const jsonPath = path.join(projDir, 'data.json');
+
+    if (!fs.existsSync(jsonPath)) {
+        console.warn(`  No data.json for ${projectName}, skipping`);
+        return;
+    }
+
+    const existingData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const projectUrl = existingData.url;
+
+    if (!projectUrl) {
+        console.warn(`  No url in data.json for ${projectName}, skipping`);
+        return;
+    }
+
+    const imgDir = path.join(projDir, 'images');
+    if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+
+    let logoUrl = null;
+
+    // 1) Try og:image from project website
+    if (!logoUrl) {
+        try {
+            logoUrl = await fetchLogoUrl(projectUrl);
+            if (logoUrl) console.log(`  Found og:image: ${logoUrl}`);
+        } catch (e) {
+            console.warn(`  og:image fetch failed: ${e.message}`);
+        }
+    }
+
+    // 2) Fallback: Clearbit logo API
+    if (!logoUrl) {
+        try {
+            const domain = new URL(projectUrl).hostname;
+            logoUrl = await fetchLogoUrlClearbit(domain);
+        } catch (e) {
+            console.warn(`  Clearbit fallback failed: ${e.message}`);
+        }
+    }
+
+    if (!logoUrl) {
+        console.log(`  No logo found for ${projectName}`);
+        return;
+    }
+
+    let ext = path.extname(new URL(logoUrl).pathname);
+    if (!ext || ext.length > 5) ext = '.png';
+    const localLogoPath = `images/logo${ext}`;
+    const destPath = path.join(projDir, localLogoPath);
 
     try {
-        await page.goto(project.url, { waitUntil: 'networkidle2', timeout: 60000 });
+        console.log(`  Downloading: ${logoUrl}`);
+        await downloadImage(logoUrl, destPath);
+        console.log(`  Saved → ${localLogoPath}`);
 
-        // Wait for main content to load
-        await page.waitForSelector('h1', { timeout: 10000 }).catch(() => console.log('h1 not found quickly, continuing anyway'));
-
-        // Extract data
-        const data = await page.evaluate(() => {
-            // DappRadar has specific classes, but we can try generic selectors too
-            const titleEl = document.querySelector('h1');
-            const title = titleEl ? titleEl.innerText.trim() : '';
-
-            // Description is usually in a paragraph below the title or explicitly marked as description
-            // Trying to find a descriptive paragraph
-            const paragraphs = Array.from(document.querySelectorAll('p'));
-            let description = '';
-            for (const p of paragraphs) {
-                const text = p.innerText.trim();
-                if (text.length > 50 && text.length < 1000) { // arbitrary heuristic for description length
-                    description = text;
-                    break;
-                }
-            }
-
-            // Look for the main logo image (often a large square image near the top)
-            // DappRadar often uses specific next/image structures
-            const images = Array.from(document.querySelectorAll('img[src*="dappradar"]'));
-            let logoUrl = '';
-            if (images.length > 0) {
-                // We assume the first decent logo-looking image is the one
-                const logoImg = document.querySelector('img[alt*="logo"] i, img[alt*="Logo"] i') || images.find(img => img.width >= 50 && img.height >= 50 && img.width === img.height) || images[0];
-                if (logoImg) {
-                    logoUrl = logoImg.src;
-                }
-            } else {
-                const allImgs = Array.from(document.querySelectorAll('img'));
-                // Just take the first image if we can't find anything better
-                if (allImgs.length > 0) {
-                    logoUrl = allImgs[0].src;
-                }
-            }
-
-            return { title, description, logoUrl };
-        });
-
-        // Ensure directory exists
-        const projDir = path.join(PROJECTS_DIR, project.name);
-        if (!fs.existsSync(projDir)) {
-            fs.mkdirSync(projDir, { recursive: true });
-        }
-
-        // Create images dir
-        const imgDir = path.join(projDir, 'images');
-        if (!fs.existsSync(imgDir)) {
-            fs.mkdirSync(imgDir, { recursive: true });
-        }
-
-        let localLogoPath = '';
-        if (data.logoUrl) {
-            // Fix relative URLs if any
-            let finalUrl = data.logoUrl;
-            if (finalUrl.startsWith('/')) {
-                finalUrl = 'https://dappradar.com' + finalUrl;
-            } else if (finalUrl.startsWith('data:image')) {
-                // base64 image - save it directly? Let's skip base64 for now or save as text
-                console.log("Found base64 image, skipping download");
-                finalUrl = "";
-            }
-
-            if (finalUrl) {
-                console.log(`Downloading logo: ${finalUrl}`);
-                const ext = path.extname(new URL(finalUrl).pathname) || '.png';
-                localLogoPath = `images/logo${ext}`;
-                await downloadImage(finalUrl, path.join(projDir, localLogoPath));
-            }
-        }
-
-        // Save data.json template
-        const jsonPath = path.join(projDir, 'data.json');
-
-        // If it exists, we read it to not overwrite existing contracts
-        let existingData = {};
-        if (fs.existsSync(jsonPath)) {
-            existingData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-        }
-
-        const finalData = {
-            name: data.title || existingData.name || project.name,
-            description: data.description || existingData.description || 'Description not found',
-            url: project.url,
-            logo: localLogoPath || existingData.logo || '',
-            contracts: existingData.contracts || [] // Preserving existings contracts!
-        };
-
-        fs.writeFileSync(jsonPath, JSON.stringify(finalData, null, 2));
-        console.log(`Successfully scraped ${project.name}`);
-
-    } catch (error) {
-        console.error(`Error scraping ${project.name}:`, error.message);
-    } finally {
-        await page.close();
+        // Update data.json logo field only; preserve everything else
+        existingData.logo = localLogoPath;
+        fs.writeFileSync(jsonPath, JSON.stringify(existingData, null, 2));
+        console.log(`  Updated data.json for ${projectName}`);
+    } catch (e) {
+        console.error(`  Download failed: ${e.message}`);
     }
 }
 
 async function main() {
-    console.log('Launching Puppeteer...');
-    // Use new headless mode for better compatibility
-    const browser = await puppeteer.launch({ headless: 'new' });
+    const projects = fs.readdirSync(PROJECTS_DIR).filter(d =>
+        fs.statSync(path.join(PROJECTS_DIR, d)).isDirectory()
+    );
 
-    for (const project of PROJECTS) {
-        await scrapeProject(browser, project);
+    console.log(`Found projects: ${projects.join(', ')}\n`);
+
+    for (const project of projects) {
+        console.log(`[${project}]`);
+        await scrapeProject(project);
+        console.log('');
     }
 
-    await browser.close();
-    console.log('Scraping complete!');
+    console.log('Done.');
 }
 
 main().catch(console.error);
