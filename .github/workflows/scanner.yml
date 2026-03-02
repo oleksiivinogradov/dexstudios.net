@@ -42,17 +42,18 @@ jobs:
         run: npm start
         
       - name: Commit Updated Scanner Data
-        if: always()   # commit partial results even if the job was cancelled
+        if: always()
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add \
-            radar/projects/*/stats/*.json \
-            radar/projects/*/wallets/**/*.json \
-            radar/projects/*/wallets/*.json \
-            radar/projects/*/uaw.json \
-            radar/projects/ranking.json \
-            radar/scanner/*_state.json
+
+          # Add each pattern separately — if a glob matches nothing, ignore it
+          git add radar/scanner/*_state.json              2>/dev/null || true
+          git add radar/projects/*/stats/*.json           2>/dev/null || true
+          git add radar/projects/*/wallets/*.json         2>/dev/null || true
+          git add radar/projects/*/wallets/**/*.json      2>/dev/null || true
+          git add radar/projects/*/uaw.json               2>/dev/null || true
+          git add radar/projects/ranking.json             2>/dev/null || true
 
           if git diff --staged --quiet; then
             echo "No scanner data changes detected."
