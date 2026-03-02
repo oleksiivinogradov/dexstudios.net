@@ -42,6 +42,7 @@ jobs:
         run: npm start
         
       - name: Commit Updated Scanner Data
+        if: always()   # commit partial results even if the job was cancelled
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'

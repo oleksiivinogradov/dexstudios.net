@@ -25,6 +25,14 @@ const NETWORK_RPCS = {
   ]
 };
 
+// Average block time in seconds — used only on first run to estimate the start block
+// (avoids scanning from genesis). A 20% buffer is applied so we slightly over-cover.
+const CHAIN_AVG_BLOCK_TIME = {
+  'skale-nebula': 3,
+  'somnia':       0.1,
+  'polygon':      2,
+};
+
 const WAIT_TIME_ON_LIMIT = 5000;
 const MAX_HISTORY_SECONDS = 24 * 60 * 60; // 1 day
 const MAX_WALLET_DAYS     = 30;            // keep day-bucket files this many days
@@ -104,6 +112,49 @@ function unionDays(walletsDir, n) {
     for (const w of bucket) union.add(w);
   }
   return union.size;
+}
+
+/**
+ * Flush wallet data for one chain to disk immediately after its scan loop.
+ * This ensures SKALE data is persisted even if Somnia crashes later in the run.
+ * chainWallets: { projectId: { dateStr: Set<addr> } }
+ */
+function saveChainWallets(chain, chainWallets, projectsArr) {
+  for (const proj of projectsArr) {
+    const dateBuckets = chainWallets[proj.id];
+    if (!dateBuckets || Object.keys(dateBuckets).length === 0) continue;
+
+    const walletsDir      = path.join(proj.path, 'wallets');
+    const chainWalletsDir = path.join(walletsDir, chain);
+
+    const chainAlltime = loadAlltime(chainWalletsDir);
+    const alltime      = loadAlltime(walletsDir);
+    let   chainNew = 0, crossNew = 0;
+
+    for (const [dateStr, newSet] of Object.entries(dateBuckets)) {
+      // Per-chain bucket
+      const existing = loadDayBucket(chainWalletsDir, dateStr);
+      for (const w of newSet) existing.add(w);
+      saveDayBucket(chainWalletsDir, dateStr, existing);
+
+      // Cross-chain bucket
+      const existingAll = loadDayBucket(walletsDir, dateStr);
+      for (const w of newSet) existingAll.add(w);
+      saveDayBucket(walletsDir, dateStr, existingAll);
+    }
+
+    for (const walletSet of Object.values(dateBuckets)) {
+      for (const w of walletSet) {
+        if (!(w in chainAlltime)) { chainAlltime[w] = 1; chainNew++; }
+        if (!(w in alltime))      { alltime[w]      = 1; crossNew++; }
+      }
+    }
+
+    if (chainNew > 0) saveAlltime(chainWalletsDir, chainAlltime);
+    if (crossNew > 0) saveAlltime(walletsDir, alltime);
+    pruneOldBuckets(chainWalletsDir);
+    pruneOldBuckets(walletsDir);
+  }
 }
 
 /**
@@ -272,6 +323,8 @@ async function runScanner() {
 
       let blockCountProcessed = 0;
       let hitTimeLimit        = false;
+      const totalBlocks       = latestBlockNumber - stopBlock;
+      const scanStartTime     = Date.now();
 
       // ── Block scan loop ──
       while (targetBlock > stopBlock && !hitTimeLimit) {
@@ -279,7 +332,30 @@ async function runScanner() {
         if (!block) { targetBlock--; continue; }
 
         if (blockCountProcessed % 100 === 0) {
-          console.log(`[${chain}] Scanning block ${targetBlock} (${new Date(block.timestamp * 1000).toISOString()})...`);
+          let etaStr = '';
+          if (blockCountProcessed > 0 && totalBlocks > 0) {
+            const elapsed    = Date.now() - scanStartTime;
+            const msPerBlock = elapsed / blockCountProcessed;
+            const remaining  = totalBlocks - blockCountProcessed;
+            const etaSec     = Math.round(msPerBlock * remaining / 1000);
+            const etaMin     = Math.floor(etaSec / 60);
+            etaStr = etaMin > 0
+              ? `  ETA ~${etaMin}m ${etaSec % 60}s  (${blockCountProcessed}/${totalBlocks} blocks)`
+              : `  ETA ~${etaSec}s  (${blockCountProcessed}/${totalBlocks} blocks)`;
+          }
+          console.log(`[${chain}] Scanning block ${targetBlock} (${new Date(block.timestamp * 1000).toISOString()})...${etaStr}`);
+
+          // ── Checkpoint every 100 blocks ──
+          // Save state so next run resumes here if the process is killed.
+          // Stats are written with current partial counts (last24h, total).
+          // dailyCounts is NOT updated here — only at end of chain loop.
+          if (blockCountProcessed > 0) {
+            fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: targetBlock }));
+            for (const sObj of Object.values(statsCache)) {
+              sObj.data.lastUpdated = new Date().toISOString();
+              fs.writeFileSync(sObj.file, JSON.stringify(sObj.data, null, 2));
+            }
+          }
         }
 
         if (isFirstRun && block.timestamp < firstRunCutoff) {
@@ -363,58 +439,25 @@ async function runScanner() {
       fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
       console.log(`[${chain}] Done. Processed ${blockCountProcessed} blocks.`);
 
+      // ── Flush wallet data for this chain immediately ──
+      // Ensures data is on disk before the next (possibly slow) chain starts.
+      const chainOnlyWallets = {};
+      for (const projId of Object.keys(walletAccumulator)) {
+        if (walletAccumulator[projId][chain]) {
+          chainOnlyWallets[projId] = walletAccumulator[projId][chain];
+        }
+      }
+      saveChainWallets(chain, chainOnlyWallets, projects);
+      console.log(`[${chain}] Wallet data flushed to disk.`);
+
     } catch (err) {
       console.error(`[${chain}] Fatal error processing chain: ${err.message}`);
     }
   }
 
-  // 4. After all chains: update wallet files and compute UAW per project
+  // 4. Recompute UAW per project (wallet files already flushed after each chain)
   console.log('\n================ Updating UAW data ================');
   for (const proj of projects) {
-    const walletsDir  = path.join(proj.path, 'wallets');
-    // projWallets: { chain: { dateStr: Set<addr> } }
-    const projWallets = walletAccumulator[proj.id] || {};
-
-    // Cross-chain alltime accumulator (filled while iterating chains below)
-    const alltime  = loadAlltime(walletsDir);
-    let   newCount = 0;
-
-    for (const [ch, chainDates] of Object.entries(projWallets)) {
-      const chainWalletsDir = path.join(walletsDir, ch);
-
-      // ── Per-chain day-bucket files (wallets/{chain}/YYYY-MM-DD.json) ──
-      const chainAlltime  = loadAlltime(chainWalletsDir);
-      let   chainNewCount = 0;
-      for (const [dateStr, newSet] of Object.entries(chainDates)) {
-        const existing = loadDayBucket(chainWalletsDir, dateStr);
-        for (const w of newSet) existing.add(w);
-        saveDayBucket(chainWalletsDir, dateStr, existing);
-      }
-      for (const walletSet of Object.values(chainDates)) {
-        for (const w of walletSet) {
-          if (!(w in chainAlltime)) { chainAlltime[w] = 1; chainNewCount++; }
-        }
-      }
-      if (chainNewCount > 0) saveAlltime(chainWalletsDir, chainAlltime);
-      pruneOldBuckets(chainWalletsDir);
-
-      // ── Cross-chain day-bucket files (wallets/YYYY-MM-DD.json) ──
-      for (const [dateStr, newSet] of Object.entries(chainDates)) {
-        const existing = loadDayBucket(walletsDir, dateStr);
-        for (const w of newSet) existing.add(w);
-        saveDayBucket(walletsDir, dateStr, existing);
-      }
-      for (const walletSet of Object.values(chainDates)) {
-        for (const w of walletSet) {
-          if (!(w in alltime)) { alltime[w] = 1; newCount++; }
-        }
-      }
-    }
-
-    if (newCount > 0) saveAlltime(walletsDir, alltime);
-    pruneOldBuckets(walletsDir);
-
-    // Compute and save UAW summary (includes byChain breakdown)
     const uaw = computeAndSaveUAW(proj.path);
     const chainSummary = Object.entries(uaw.byChain)
       .map(([c, v]) => `${c}:${v.uaw24h}`).join(' ');
