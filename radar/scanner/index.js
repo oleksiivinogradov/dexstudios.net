@@ -321,6 +321,11 @@ async function runScanner() {
         for (const map of chainsMap[chain].mappings[addr]) getStatsObj(map.projectId, addr);
       }
 
+      // Save latestBlockNumber NOW before touching any blocks.
+      // If the job is cancelled at any point (even block 0), the next run
+      // will correctly resume from this point instead of re-scanning.
+      fs.writeFileSync(stateFile, JSON.stringify({ lastProcessedBlock: latestBlockNumber }));
+
       let blockCountProcessed = 0;
       let hitTimeLimit        = false;
       const totalBlocks       = latestBlockNumber - stopBlock;
