@@ -4,23 +4,36 @@ on:
   workflow_dispatch:
     inputs:
       days:
-        description: 'Days of history to backfill'
-        required: true
+        description: 'Days of history to backfill (e.g. 30). Ignored if start_date is set.'
+        required: false
         default: '30'
-        type: choice
-        options:
-          - '30'
-          - '60'
-          - '90'
+        type: string
+      start_date:
+        description: 'Start date YYYY-MM-DD (optional, overrides days)'
+        required: false
+        default: ''
+        type: string
+      end_date:
+        description: 'End date YYYY-MM-DD (optional, defaults to today)'
+        required: false
+        default: ''
+        type: string
       chain:
         description: 'Chain to backfill (leave empty for all chains)'
         required: false
         default: ''
         type: string
 
+# Use same concurrency group as the periodic scanner so they never run
+# simultaneously and step on each other's stats/wallet files.
+concurrency:
+  group: radar-scanner
+  cancel-in-progress: false
+
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 360   # 6 h ceiling; incremental saves let the next run resume
     permissions:
       contents: write
 
@@ -35,36 +48,51 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'radar/scripts/package-lock.json'
+          cache-dependency-path: 'radar/scanner/package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./radar/scripts
+        working-directory: ./radar/scanner
         run: npm install
 
       - name: Run backfill
-        working-directory: ./radar/scripts
+        working-directory: ./radar/scanner
         run: |
-          ARGS="--days=${{ github.event.inputs.days }}"
+          if [ -n "${{ github.event.inputs.start_date }}" ]; then
+            ARGS="--from=${{ github.event.inputs.start_date }}"
+            if [ -n "${{ github.event.inputs.end_date }}" ]; then
+              ARGS="$ARGS --to=${{ github.event.inputs.end_date }}"
+            fi
+          else
+            ARGS="--days=${{ github.event.inputs.days }}"
+          fi
           if [ -n "${{ github.event.inputs.chain }}" ]; then
             ARGS="$ARGS --chain=${{ github.event.inputs.chain }}"
           fi
+          echo "Running: node backfill.js $ARGS"
           node backfill.js $ARGS
-        env:
-          POLYGONSCAN_API_KEY: ${{ secrets.POLYGONSCAN_API_KEY }}
-          SOMNIA_API_KEY:      ${{ secrets.SOMNIA_API_KEY }}
-          SKALE_API_KEY:       ${{ secrets.SKALE_API_KEY }}
 
       - name: Commit backfilled data
+        # Run even if backfill was canceled/timed-out so partial results are saved
+        if: always()
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -A radar/projects/
+
+          # Stage both project data and backfill progress state files
+          git add -A radar/projects/ radar/scanner/backfill_*.json
 
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
             CHAIN_LABEL="${{ github.event.inputs.chain }}"
             CHAIN_LABEL="${CHAIN_LABEL:-all chains}"
-            git commit -m "chore(radar): backfill ${{ github.event.inputs.days }}d history ($CHAIN_LABEL)"
+
+            if [ -n "${{ github.event.inputs.start_date }}" ]; then
+              LABEL="${{ github.event.inputs.start_date }}→${{ github.event.inputs.end_date || 'today' }}"
+            else
+              LABEL="${{ github.event.inputs.days }}d"
+            fi
+
+            git commit -m "chore(radar): backfill ${LABEL} (${CHAIN_LABEL})"
             git push
           fi

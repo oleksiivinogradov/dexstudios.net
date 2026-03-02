@@ -36,7 +36,7 @@ console.log(`Backfill: ${DAYS} days${ONLY_CHAIN ? ` / chain=${ONLY_CHAIN}` : ' /
  */
 const EXPLORER_APIS = {
   'somnia': {
-    url:    'https://explorer.somnia.network/api',
+    url:    'https://mainnet.somnia.w3us.site/api',
     apiKey: process.env.SOMNIA_API_KEY || '',
   },
   'skale-nebula': {
