@@ -1,62 +1,20 @@
 {
-  "total": 658,
-  "last24h": 73,
+  "total": 659,
+  "last24h": 74,
   "recentTxs": [
     {
-      "hash": "0x03cdc71f705941c830efa9b13e98850983f05b3109be433c4854821537521331",
-      "from": "0xfC51bDeB701BCE72d6B8e22324CD85467f4b5659",
+      "hash": "0xec68724424b275c9b0a0db28d368988113aa30ed62bd802d48939d54371592ac",
+      "from": "0x0a6C3Ebd414A97F007b50608244697369429c79B",
       "value": "0",
-      "blockNumber": 38848160,
-      "timeStamp": 1772573721
-    },
-    {
-      "hash": "0x2005c23c71b2213babfe24f9e6dec4d79f56cd8471adbc6525e5227714231948",
-      "from": "0x248416bC745F3E65b016f7CcBF2326c0535244ff",
-      "value": "0",
-      "blockNumber": 38848105,
-      "timeStamp": 1772573637
-    },
-    {
-      "hash": "0xfe0ac24270bb20ee1ff014f0f020ec518bdb4e122c3b63f118a62f8af1a6ff8e",
-      "from": "0x5fc8C00AA1B4be30c309fa7171F0dff888B7ECd9",
-      "value": "0",
-      "blockNumber": 38847765,
-      "timeStamp": 1772573051
-    },
-    {
-      "hash": "0x9e08a1fb597689d06e2860a57cfaaa8f1b64f71dfd7b05535aad9e735d5c8788",
-      "from": "0xD11533fE0f6407EC26aED81EeD2B790df4A5852B",
-      "value": "0",
-      "blockNumber": 38847258,
-      "timeStamp": 1772572177
-    },
-    {
-      "hash": "0x5563a3a34ede883286bfae2f499bc3af73492723362d64181a984493561d064c",
-      "from": "0x00f054906d0228d61f07C152A4acBaA7EeA9e61C",
-      "value": "0",
-      "blockNumber": 38847188,
-      "timeStamp": 1772572062
-    },
-    {
-      "hash": "0xc29de7da3b0ff13f3e634edb6e594bb367a402a7497e948632130c058db6b47f",
-      "from": "0x4c878ff707F67b4005475B78FcA6657Ba34Af2d4",
-      "value": "0",
-      "blockNumber": 38846835,
-      "timeStamp": 1772571389
-    },
-    {
-      "hash": "0x0a2a8257a7684097acc8c9825f72af0479d8e8d4cf13e2e23945dc69af797973",
-      "from": "0x926534DAD8022eEcce27AfB95BB9A2b78B424954",
-      "value": "0",
-      "blockNumber": 38846528,
-      "timeStamp": 1772570817
+      "blockNumber": 38848668,
+      "timeStamp": 1772574608
     }
   ],
-  "lastUpdated": "2026-03-03T21:46:46.923Z",
+  "lastUpdated": "2026-03-03T21:57:47.134Z",
   "dailyCounts": [
     {
       "date": "2026-03-03",
-      "count": 73
+      "count": 74
     },
     {
       "date": "2026-03-02",
