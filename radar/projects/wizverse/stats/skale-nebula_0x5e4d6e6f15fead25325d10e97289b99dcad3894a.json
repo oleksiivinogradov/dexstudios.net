@@ -1,48 +1,41 @@
 {
-  "total": 647,
-  "last24h": 62,
+  "total": 651,
+  "last24h": 66,
   "recentTxs": [
     {
-      "hash": "0x0ca07aa1d8cfd45d85a093224db80fff4abe5c71b973ef1fcfe38149a8827ebf",
-      "from": "0x680E33af053FF5afE04b2fF7354F496250988958",
+      "hash": "0x1e2328ef00a940729679e63e83ab3840d8985fcf06f0a098dc563bed2ae80ae3",
+      "from": "0x17Dae8B18CaBb5742bD167d53049E4490F798Cbb",
       "value": "0",
-      "blockNumber": 38834976,
-      "timeStamp": 1772549648
+      "blockNumber": 38835954,
+      "timeStamp": 1772551380
     },
     {
-      "hash": "0xc0fdd770449bbcf7a9230d6c5d0fb4a2ca2803e2514b67a2b6fe0eeaa5fd5aa4",
-      "from": "0x5fad7CAD8f754ddE5273F9C1a186d24B9907aD1c",
+      "hash": "0x2cdc364d56140e0be5c1256e60bf8ef1008a9b8e4e0f0f446110c295057dbdfe",
+      "from": "0x3d4943cAa989c17eB8024222E4913044B36Edf16",
       "value": "0",
-      "blockNumber": 38834836,
-      "timeStamp": 1772549405
+      "blockNumber": 38835635,
+      "timeStamp": 1772550805
     },
     {
-      "hash": "0x6cc0bfa957cb8a4b011edba8e8148204ad0020c3140c18d286bdefe48f02d844",
-      "from": "0xFdb92c3D09167DBd71261d78E3f8dE1824a640b4",
+      "hash": "0xcf2014f3bd93affa8702917b923e80430e8bc6464977016269f9ca25e34d48eb",
+      "from": "0x0c05Cbc51c1139496057D8202a32E0D135B6c167",
       "value": "0",
-      "blockNumber": 38834547,
-      "timeStamp": 1772548922
+      "blockNumber": 38835274,
+      "timeStamp": 1772550162
     },
     {
-      "hash": "0xa3839b64d56301c568341876624454892b3df20dd41f01fe2600bfac009e6b80",
-      "from": "0xFA2A65e9294157F5fc34929120374B4149Cfa91B",
+      "hash": "0x9ff5fb66cc1270087fce16e026c048a108b01848233d324138f9c3705856c242",
+      "from": "0xf55A6173c3de5D39F51753B5062AB8651138C71A",
       "value": "0",
-      "blockNumber": 38834491,
-      "timeStamp": 1772548816
-    },
-    {
-      "hash": "0x4a2bee571f39dcee871b372ed83d86a7b58b426bdeff886c541e4df0d1d64207",
-      "from": "0xa0CEc381f4A633E768e431C97df5E6f058A942F0",
-      "value": "0",
-      "blockNumber": 38834391,
-      "timeStamp": 1772548653
+      "blockNumber": 38835202,
+      "timeStamp": 1772550030
     }
   ],
-  "lastUpdated": "2026-03-03T14:58:53.092Z",
+  "lastUpdated": "2026-03-03T15:26:31.999Z",
   "dailyCounts": [
     {
       "date": "2026-03-03",
-      "count": 62
+      "count": 66
     },
     {
       "date": "2026-03-02",
