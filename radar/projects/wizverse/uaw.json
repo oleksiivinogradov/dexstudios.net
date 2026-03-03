@@ -1,8 +1,21 @@
 {
-  "uaw24h": 0,
-  "uaw7d": 0,
-  "uaw30d": 0,
-  "uawAlltime": 0,
-  "byChain": {},
-  "lastUpdated": "2026-03-03T08:56:23.759Z"
+  "uaw24h": 4,
+  "uaw7d": 4,
+  "uaw30d": 4,
+  "uawAlltime": 4,
+  "dailyUAW": {
+    "2026-03-03": 4
+  },
+  "byChain": {
+    "skale-nebula": {
+      "uaw24h": 4,
+      "uaw7d": 4,
+      "uaw30d": 4,
+      "uawAlltime": 4,
+      "dailyUAW": {
+        "2026-03-03": 4
+      }
+    }
+  },
+  "lastUpdated": "2026-03-03T09:20:41.922Z"
 }
