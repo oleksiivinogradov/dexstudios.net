@@ -160,28 +160,43 @@ function initLightbox() {
 /* ── Chart instance ────────────────────────────────────────────── */
 let chartInstance = null;
 
-function renderChart(dailyMap, days) {
+function renderChart(dailyMap, uawDailyMap, days) {
   const canvas = $('activity-chart');
   if (!canvas) return;
   const { labels, data } = buildDayBucketsFromDaily(dailyMap, days);
+  const uawData = buildDayBucketsFromDaily(uawDailyMap || {}, days).data;
+  const hasUAW  = uawData.some(v => v > 0);
 
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
-  chartInstance = new Chart(canvas, {
-    data: {
-      labels,
-      datasets: [
-        {
-          type: 'bar',
-          label: 'Transactions',
-          data,
-          backgroundColor: 'rgba(45,212,191,0.7)',
-          borderRadius: 4,
-          borderSkipped: false,
-          yAxisID: 'yTx',
-        },
-      ],
+  const datasets = [
+    {
+      type: 'bar',
+      label: 'Transactions',
+      data,
+      backgroundColor: 'rgba(45,212,191,0.7)',
+      borderRadius: 4,
+      borderSkipped: false,
+      yAxisID: 'yTx',
     },
+  ];
+
+  if (hasUAW) {
+    datasets.push({
+      type: 'line',
+      label: 'UAW',
+      data: uawData,
+      borderColor: '#e2e8f0',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.4,
+      yAxisID: 'yUAW',
+    });
+  }
+
+  chartInstance = new Chart(canvas, {
+    data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -208,6 +223,14 @@ function renderChart(dailyMap, days) {
           ticks: { color: '#8b9cbf', font: { size: 11 } },
           beginAtZero: true,
         },
+        ...(hasUAW && {
+          yUAW: {
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#e2e8f0', font: { size: 11 } },
+            beginAtZero: true,
+          },
+        }),
       },
     },
   });
@@ -549,9 +572,15 @@ async function initDashboard() {
     return chain ? (chainStats[chain]?.daily || {}) : globalDaily;
   }
 
+  function filteredDailyUAW(chain) {
+    if (!uawData) return {};
+    if (chain && uawData.byChain?.[chain]?.dailyUAW) return uawData.byChain[chain].dailyUAW;
+    return uawData.dailyUAW || {};
+  }
+
   buildChainFilter('chart-chain-filter', chains, chain => {
     activeChartChain = chain;
-    renderChart(filteredDaily(activeChartChain), activeChartDays);
+    renderChart(filteredDaily(activeChartChain), filteredDailyUAW(activeChartChain), activeChartDays);
   });
 
   /* ── Chart ── */
@@ -560,13 +589,13 @@ async function initDashboard() {
       // Show every day from the earliest date in dailyCounts
       const daily = filteredDaily(activeChartChain);
       const dates  = Object.keys(daily).sort();
-      if (!dates.length) { activeChartDays = 7; renderChart(daily, 7); return; }
+      if (!dates.length) { activeChartDays = 7; renderChart(daily, filteredDailyUAW(activeChartChain), 7); return; }
       const oldestTs = new Date(dates[0] + 'T00:00:00Z').getTime() / 1000;
       activeChartDays = Math.max(1, Math.ceil((Date.now() / 1000 - oldestTs) / 86400) + 1);
     } else {
       activeChartDays = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 }[period] || 7;
     }
-    renderChart(filteredDaily(activeChartChain), activeChartDays);
+    renderChart(filteredDaily(activeChartChain), filteredDailyUAW(activeChartChain), activeChartDays);
   }
 
   applyChartPeriod('7d');

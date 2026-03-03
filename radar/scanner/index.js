@@ -179,6 +179,21 @@ function saveChainWallets(chain, chainWallets, projectsArr) {
  * Recompute UAW for all windows and write uaw.json next to data.json.
  * Called after wallet files are updated for the project.
  */
+/** Read every day-bucket file in a directory and return { 'YYYY-MM-DD': count } */
+function buildDailyUAWMap(dir) {
+  const map = {};
+  if (!fs.existsSync(dir)) return map;
+  for (const f of fs.readdirSync(dir)) {
+    if (!/^\d{4}-\d{2}-\d{2}\.json$/.test(f)) continue;
+    const dateStr = f.slice(0, 10);
+    try {
+      const arr = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      map[dateStr] = Array.isArray(arr) ? arr.length : 0;
+    } catch { /* skip corrupted */ }
+  }
+  return map;
+}
+
 function computeAndSaveUAW(projectPath) {
   const walletsDir = path.join(projectPath, 'wallets');
   const alltime    = loadAlltime(walletsDir);
@@ -188,6 +203,7 @@ function computeAndSaveUAW(projectPath) {
     uaw7d:      unionDays(walletsDir, 7),
     uaw30d:     unionDays(walletsDir, 30),
     uawAlltime: Object.keys(alltime).length,
+    dailyUAW:   buildDailyUAWMap(walletsDir),
     byChain:    {},
     lastUpdated: new Date().toISOString(),
   };
@@ -203,6 +219,7 @@ function computeAndSaveUAW(projectPath) {
           uaw7d:      unionDays(chainDir, 7),
           uaw30d:     unionDays(chainDir, 30),
           uawAlltime: Object.keys(chainAlltime).length,
+          dailyUAW:   buildDailyUAWMap(chainDir),
         };
       }
     }
