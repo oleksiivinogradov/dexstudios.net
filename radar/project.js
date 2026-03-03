@@ -108,23 +108,18 @@ setInterval(() => {
   document.querySelectorAll('.footer-time[data-last-updated]').forEach(_renderFooterTime);
 }, 60000);
 
-/* ── Build chart data from recentTxs ───────────────────────────── */
-function buildDayBuckets(allTxs, days) {
-  const buckets = {};
-  const now = Date.now();
+/* ── Build chart data from dailyCounts map { 'YYYY-MM-DD': count } ── */
+function buildDayBucketsFromDaily(dailyMap, days) {
+  const labels = [];
+  const data   = [];
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(now - i * 86400000);
-    buckets[d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })] = 0;
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    data.push(dailyMap[dateStr] || 0);
   }
-  const cutoff = (now / 1000) - days * 86400;
-  allTxs.forEach(tx => {
-    if (tx.timeStamp >= cutoff) {
-      const d = new Date(tx.timeStamp * 1000);
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (label in buckets) buckets[label]++;
-    }
-  });
-  return { labels: Object.keys(buckets), data: Object.values(buckets) };
+  return { labels, data };
 }
 
 /* ── Lightbox ──────────────────────────────────────────────────── */
@@ -165,12 +160,10 @@ function initLightbox() {
 /* ── Chart instance ────────────────────────────────────────────── */
 let chartInstance = null;
 
-function renderChart(allTxs, days) {
+function renderChart(dailyMap, days) {
   const canvas = $('activity-chart');
   if (!canvas) return;
-  const { labels, data } = buildDayBuckets(allTxs, days);
-
-  const uawLine = data.map(v => Math.round(v * 0.6));
+  const { labels, data } = buildDayBucketsFromDaily(dailyMap, days);
 
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
@@ -185,17 +178,6 @@ function renderChart(allTxs, days) {
           backgroundColor: 'rgba(45,212,191,0.7)',
           borderRadius: 4,
           borderSkipped: false,
-          yAxisID: 'yTx',
-        },
-        {
-          type: 'line',
-          label: 'UAW',
-          data: uawLine,
-          borderColor: '#e2e8f0',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.4,
           yAxisID: 'yTx',
         },
       ],
@@ -563,23 +545,28 @@ async function initDashboard() {
     applyPeriodStats(activeStatsPeriod); // UAW recalculates inside
   });
 
+  function filteredDaily(chain) {
+    return chain ? (chainStats[chain]?.daily || {}) : globalDaily;
+  }
+
   buildChainFilter('chart-chain-filter', chains, chain => {
     activeChartChain = chain;
-    renderChart(filteredTxs(activeChartChain), activeChartDays);
+    renderChart(filteredDaily(activeChartChain), activeChartDays);
   });
 
   /* ── Chart ── */
   function applyChartPeriod(period) {
     if (period === 'all') {
-      // Show every day from the earliest tx in the dataset
-      const txs = filteredTxs(activeChartChain);
-      if (txs.length === 0) { activeChartDays = 7; renderChart(txs, 7); return; }
-      const oldestTs  = txs[txs.length - 1].timeStamp;
+      // Show every day from the earliest date in dailyCounts
+      const daily = filteredDaily(activeChartChain);
+      const dates  = Object.keys(daily).sort();
+      if (!dates.length) { activeChartDays = 7; renderChart(daily, 7); return; }
+      const oldestTs = new Date(dates[0] + 'T00:00:00Z').getTime() / 1000;
       activeChartDays = Math.max(1, Math.ceil((Date.now() / 1000 - oldestTs) / 86400) + 1);
     } else {
       activeChartDays = { '7d': 7, '30d': 30, '90d': 90, '1y': 365 }[period] || 7;
     }
-    renderChart(filteredTxs(activeChartChain), activeChartDays);
+    renderChart(filteredDaily(activeChartChain), activeChartDays);
   }
 
   applyChartPeriod('7d');
