@@ -1,34 +1,20 @@
 {
-  "total": 674,
-  "last24h": 89,
+  "total": 675,
+  "last24h": 90,
   "recentTxs": [
     {
-      "hash": "0xbbf2e3b4c6523ff995be122e6639b20740e05c431da87413f592f0926ecf1c52",
-      "from": "0x7A9735911Fb4C63e87345B5811E7e42c33f7dba4",
+      "hash": "0x54c753d81dd236791c78ed5b1cc9c0c9b5437e8117955527b0771760c42d1642",
+      "from": "0x3774fD68b96D25750c0DedD36AFAdA8021A5E8Bf",
       "value": "0",
-      "blockNumber": 38852134,
-      "timeStamp": 1772580729
-    },
-    {
-      "hash": "0x8eb6b37957db02a9182120eae03e4363b35b7b9b072f142eeef6d617c378c358",
-      "from": "0x0Ac966266548B9AD2df66Fc5E27095b08282171f",
-      "value": "0",
-      "blockNumber": 38851839,
-      "timeStamp": 1772580155
-    },
-    {
-      "hash": "0x7908e81acbd499ce4568664215759def0ebd3276278e17b64b5616eda9dcd457",
-      "from": "0xb08B65124199CF344a58AA3681072089B9D671bf",
-      "value": "0",
-      "blockNumber": 38851693,
-      "timeStamp": 1772579894
+      "blockNumber": 38852313,
+      "timeStamp": 1772581081
     }
   ],
-  "lastUpdated": "2026-03-03T23:33:44.735Z",
+  "lastUpdated": "2026-03-03T23:47:21.996Z",
   "dailyCounts": [
     {
       "date": "2026-03-03",
-      "count": 89
+      "count": 90
     },
     {
       "date": "2026-03-02",
