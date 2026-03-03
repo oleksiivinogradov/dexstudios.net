@@ -242,13 +242,19 @@ function countTxsForPeriod(allTxs, hours) {
   return allTxs.filter(tx => tx.timeStamp >= cutoff).length;
 }
 
-/* ── Twitter / X news feed ─────────────────────────────────────── */
+/* ── X / News tab ───────────────────────────────────────────────── */
+const X_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+
+/*
+ * X's API is paid and Nitter instances block scrapers from static sites.
+ * The News tab renders a branded profile card that links directly to X.
+ * Posts can be pinned manually via proj.pinnedTweets (array of tweet URLs).
+ */
 function renderTwitterFeed(proj) {
   const container = $('twitter-feed');
   if (!container || container.dataset.loaded) return;
   container.dataset.loaded = 'true';
 
-  // Extract handle from socials.twitter URL
   const twitterUrl = proj.socials?.twitter || '';
   const handle = twitterUrl.split('/').filter(Boolean).pop() || '';
 
@@ -260,27 +266,40 @@ function renderTwitterFeed(proj) {
     return;
   }
 
-  container.innerHTML = `
-    <div class="twitter-header">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-      Latest from <strong>@${handle}</strong>
-    </div>
-    <a class="twitter-timeline"
-       data-tweet-limit="3"
-       data-theme="dark"
-       data-chrome="noheader nofooter noborders transparent"
-       data-border-color="#1f2937"
-       href="https://twitter.com/${handle}">
-    </a>`;
+  // Render pinned tweet cards from data.json (proj.pinnedTweets = [url, ...])
+  const pinned = (proj.pinnedTweets || []).slice(0, 3);
+  const pinnedCards = pinned.map(url => {
+    const id = url.match(/\/status\/(\d+)/)?.[1];
+    const thumb = id
+      ? `<div class="x-pinned-thumb"><img src="https://pbs.twimg.com/tweet_video_thumb/${id}/pu/img/placeholder.jpg" onerror="this.parentElement.remove()" loading="lazy" /></div>`
+      : '';
+    return `
+      <a class="x-post-card" href="${url}" target="_blank" rel="noopener">
+        ${thumb}
+        <div class="x-post-meta">
+          <span class="x-post-handle">@${handle}</span>
+          <span class="x-post-date x-pinned-label">📌 pinned</span>
+        </div>
+        <div class="x-post-cta">${X_SVG} View post on X</div>
+      </a>`;
+  }).join('');
 
-  if (!document.querySelector('script[src*="platform.twitter.com"]')) {
-    const s = document.createElement('script');
-    s.src = 'https://platform.twitter.com/widgets.js';
-    s.async = true;
-    document.body.appendChild(s);
-  } else if (window.twttr?.widgets) {
-    window.twttr.widgets.load(container);
-  }
+  container.innerHTML = `
+    <div class="x-profile-card">
+      <div class="x-profile-icon">${X_SVG}</div>
+      <div class="x-profile-info">
+        <div class="x-profile-handle">@${handle}</div>
+        <div class="x-profile-sub">Follow for the latest news &amp; updates</div>
+      </div>
+      <a class="x-follow-btn" href="https://x.com/${handle}" target="_blank" rel="noopener">
+        View profile
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+    ${pinnedCards
+      ? `<div class="x-posts-list">${pinnedCards}</div>`
+      : `<div class="x-feed-hint">Add <code>pinnedTweets</code> to <code>data.json</code> to show specific posts here.</div>`
+    }`;
 }
 
 /* ── Main init ─────────────────────────────────────────────────── */
@@ -386,7 +405,7 @@ async function initDashboard() {
     document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.classList.add('active');
     $(`panel-${tabName}`)?.classList.add('active');
 
-    if (tabName === 'news') renderTwitterFeed(proj);
+    if (tabName === 'news') renderTwitterFeed(proj); // async, fire-and-forget
     if (tabName === 'about-scroll') {
       $('about-section')?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -469,6 +488,13 @@ async function initDashboard() {
   }));
 
   allTxs.sort((a, b) => b.timeStamp - a.timeStamp);
+
+  // Overwrite "Last updated" in About tab with the real-time value from stats files
+  if (lastUpdated && $('detail-updated')) {
+    $('detail-updated').textContent = new Date(lastUpdated).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    });
+  }
 
   // Real UAW from scanner-computed uaw.json
   let uawData = null;

@@ -196,7 +196,11 @@ body {
   margin-top: 1.25rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.proj-tabs::-webkit-scrollbar { display: none; }
 .tab-btn {
   background: none;
   border: none;
@@ -210,6 +214,8 @@ body {
   transition: all 0.15s;
   position: relative;
   bottom: -1px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .tab-btn:hover { color: var(--text); background: var(--bg-card2); }
 .tab-btn.active {
@@ -353,21 +359,115 @@ body {
 .detail-link:hover { text-decoration: underline; }
 .detail-link svg { flex-shrink: 0; opacity: 0.7; }
 
-/* ── Twitter / News panel ─────────────────────────────────────────── */
+/* ── X / News panel ───────────────────────────────────────────────── */
 .twitter-feed-wrap { padding: 0.5rem 0; }
-.twitter-header {
+
+/* Profile card */
+.x-profile-card {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  gap: 14px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-soft);
 }
-.twitter-header svg { color: var(--text-muted); }
-/* Override Twitter widget iframe background */
-.twitter-timeline { color-scheme: dark; }
+.x-profile-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #000;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.x-profile-info { flex: 1; min-width: 0; }
+.x-profile-handle {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.x-profile-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.x-follow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 20px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.x-follow-btn:hover { background: var(--blue-hover); }
+
+/* Post cards (for pinned tweets) */
+.x-posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.x-post-card {
+  display: block;
+  background: var(--bg-card2);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.x-post-card:hover {
+  border-color: rgba(255,255,255,0.18);
+  background: #1d2740;
+}
+.x-post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+.x-post-handle { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.x-post-date   { font-size: 0.78rem; color: var(--text-dim); }
+.x-pinned-label { font-size: 0.75rem; color: var(--text-dim); }
+.x-post-text {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.x-post-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--blue);
+  font-weight: 500;
+}
+.x-feed-hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  padding: 0.5rem 0;
+}
+.x-feed-hint code {
+  background: var(--bg-card2);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.78rem;
+}
 
 /* ── Section top row ─────────────────────────────────────────────── */
 .section-top {
@@ -931,4 +1031,5 @@ body {
   .sidebar { grid-template-columns: 1fr; }
   .sidebar-actions { grid-template-columns: repeat(3, 1fr); }
   .controls-row { flex-direction: column; align-items: flex-start; }
+  .tab-btn { font-size: 0.85rem; padding: 8px 12px; }
 }

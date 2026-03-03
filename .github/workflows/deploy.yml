@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  workflow_run:
+    workflows: ["Periodic Radar Scanner", "Backfill Historical Data"]
+    branches: [main]
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -13,11 +18,14 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,14 +38,6 @@ jobs:
           
       - name: Install dependencies
         run: npm ci
-
-      - name: Install Scanner Dependencies
-        working-directory: ./radar/scanner
-        run: npm install
-
-      - name: Run Radar Scanner
-        working-directory: ./radar/scanner
-        run: npm start
         
       - name: Build
         run: npm run build
