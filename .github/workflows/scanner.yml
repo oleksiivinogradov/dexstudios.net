@@ -54,7 +54,8 @@ jobs:
           else
             git commit -m "chore(radar): scanner sync $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             for i in 1 2 3 4 5; do
-              git pull --rebase origin main && git push && break
+              git rebase --abort 2>/dev/null || true
+              git pull --rebase -X theirs origin main && git push origin main && break
               echo "Push attempt $i failed, retrying in 5s..."
               sleep 5
             done
