@@ -1,55 +1,34 @@
 {
-  "total": 54132,
-  "last24h": 4602,
+  "total": 54135,
+  "last24h": 4605,
   "recentTxs": [
     {
-      "hash": "0x95764c8c9e5c44309c16426c436fcf8a88a4eece5eabf653004e943357cdd35f",
-      "from": "0x0624a6F98696067Bcba05090fabB29326E6B4584",
+      "hash": "0xade535d034fb8f88bd7a54a65ab178d0f6c3b987af6784bef3d8827192ba3c4d",
+      "from": "0xB028664c4082e6637b601b03A9eD7C729e3c9bff",
       "value": "0",
-      "blockNumber": 39009806,
-      "timeStamp": 1772874479
+      "blockNumber": 39010610,
+      "timeStamp": 1772875947
     },
     {
-      "hash": "0x14373333e8ae41ea6bc376e31ed97e7ec35d8646f8e7a89df96c806675257c2f",
-      "from": "0x0624a6F98696067Bcba05090fabB29326E6B4584",
+      "hash": "0x16cda76a9355584fe679dbeda2fbb3e47000e27f4139b97de5e0baefaa0977db",
+      "from": "0xB028664c4082e6637b601b03A9eD7C729e3c9bff",
       "value": "0",
-      "blockNumber": 39009802,
-      "timeStamp": 1772874473
+      "blockNumber": 39010607,
+      "timeStamp": 1772875940
     },
     {
-      "hash": "0x39f4b203c8d23b14cdc9b5e811a5cec2488e661f593146c67b13429b5cc8aed2",
-      "from": "0x0624a6F98696067Bcba05090fabB29326E6B4584",
+      "hash": "0x729becdeb475fb32830bd1920f0e77de396e6ea3492982ad4b8fcd6f42e36b19",
+      "from": "0xB028664c4082e6637b601b03A9eD7C729e3c9bff",
       "value": "0",
-      "blockNumber": 39009798,
-      "timeStamp": 1772874464
-    },
-    {
-      "hash": "0xf3b34cda3276cf5f526c6fc035c74b52a164c8b635cdb41671c9e4377694ee0f",
-      "from": "0xBA625e4673967F1737F2355fCCF0804Ad767f2d8",
-      "value": "0",
-      "blockNumber": 39009736,
-      "timeStamp": 1772874343
-    },
-    {
-      "hash": "0x7b62098a7655e6ba8ac77e5c0135526f5bd9cbb212626dd8d9e9d5548fddc256",
-      "from": "0xBA625e4673967F1737F2355fCCF0804Ad767f2d8",
-      "value": "0",
-      "blockNumber": 39009732,
-      "timeStamp": 1772874337
-    },
-    {
-      "hash": "0x2e3a519d2108d3b47ae47a9a0869c4f72b70579187d0d3fe9e81c6e2d44adda7",
-      "from": "0xBA625e4673967F1737F2355fCCF0804Ad767f2d8",
-      "value": "0",
-      "blockNumber": 39009728,
-      "timeStamp": 1772874330
+      "blockNumber": 39010604,
+      "timeStamp": 1772875936
     }
   ],
-  "lastUpdated": "2026-03-07T09:17:03.672Z",
+  "lastUpdated": "2026-03-07T09:36:37.418Z",
   "dailyCounts": [
     {
       "date": "2026-03-07",
-      "count": 1335
+      "count": 1338
     },
     {
       "date": "2026-03-06",
