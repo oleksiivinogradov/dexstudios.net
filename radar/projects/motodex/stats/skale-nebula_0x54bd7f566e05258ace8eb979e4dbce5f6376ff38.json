@@ -1,12 +1,27 @@
 {
-  "total": 46353,
-  "last24h": 4408,
-  "recentTxs": [],
-  "lastUpdated": "2026-03-09T11:47:15.875Z",
+  "total": 46355,
+  "last24h": 4410,
+  "recentTxs": [
+    {
+      "hash": "0xa48eec0c6b57ef6353b17c54ec7808f78735b4597f099acb419af9780020b9f4",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 39110731,
+      "timeStamp": 1773057619
+    },
+    {
+      "hash": "0x748de14cabc3031a4e8b04ac3f86b948a8e5d7349430d0886afcebd243643c86",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 39110723,
+      "timeStamp": 1773057608
+    }
+  ],
+  "lastUpdated": "2026-03-09T12:01:05.311Z",
   "dailyCounts": [
     {
       "date": "2026-03-09",
-      "count": 1214
+      "count": 1216
     },
     {
       "date": "2026-03-08",
