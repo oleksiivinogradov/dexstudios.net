@@ -1,12 +1,20 @@
 {
-  "total": 60199,
-  "last24h": 3000,
-  "recentTxs": [],
-  "lastUpdated": "2026-03-14T05:38:12.122Z",
+  "total": 60200,
+  "last24h": 3001,
+  "recentTxs": [
+    {
+      "hash": "0xc61ae31f0e29e31effde13bd31f6d28ded52c47bcebd6dccfdc6ae4e753f8a39",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 39335020,
+      "timeStamp": 1773468010
+    }
+  ],
+  "lastUpdated": "2026-03-14T06:00:39.600Z",
   "dailyCounts": [
     {
       "date": "2026-03-14",
-      "count": 225
+      "count": 226
     },
     {
       "date": "2026-03-13",
