@@ -1,9 +1,28 @@
 {
-  "total": 84321,
-  "last24h": 5341,
-  "recentTxs": [],
-  "lastUpdated": "2026-03-23T23:48:19.048Z",
+  "total": 84323,
+  "last24h": 3147,
+  "recentTxs": [
+    {
+      "hash": "0x7d5f732e267de82e5467a0cc9e32a60b3144239c715b65891e88022c083bba74",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 39795794,
+      "timeStamp": 1774310448
+    },
+    {
+      "hash": "0x271d0844fe42ff5bac952b7ee3c6523cf3c8d23687a942d128b1ab5a072e250f",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 39795790,
+      "timeStamp": 1774310409
+    }
+  ],
+  "lastUpdated": "2026-03-24T00:01:01.554Z",
   "dailyCounts": [
+    {
+      "date": "2026-03-24",
+      "count": 2
+    },
     {
       "date": "2026-03-23",
       "count": 3145
@@ -119,10 +138,6 @@
     {
       "date": "2026-02-23",
       "count": 3016
-    },
-    {
-      "date": "2026-02-22",
-      "count": 2107
     }
   ]
 }
