@@ -1,12 +1,69 @@
 {
-  "total": 139059,
-  "last24h": 3239,
-  "recentTxs": [],
-  "lastUpdated": "2026-04-11T10:43:46.367Z",
+  "total": 139067,
+  "last24h": 3247,
+  "recentTxs": [
+    {
+      "hash": "0xe86911d7edb62991b306230106b1a52e1887e0bfb6f35d1a1378651a67cbf155",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679681,
+      "timeStamp": 1775905268
+    },
+    {
+      "hash": "0xccf8d8208cfebd372ea73aa496d2328cefc14191e913e51708fd804280b0ea06",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679675,
+      "timeStamp": 1775905258
+    },
+    {
+      "hash": "0x3ab8bec399198feb62f725d234536ab5660fa8326408b96fd72ff0aa8195f9ad",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679669,
+      "timeStamp": 1775905249
+    },
+    {
+      "hash": "0x4b58c2c74da0d5904d842e6afeddcdac2fe2dafece90fe0267ff0ac462a2158e",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679664,
+      "timeStamp": 1775905238
+    },
+    {
+      "hash": "0x9ce57e88a20c29f9c86a5e5056ec05e1adfa040e86207444a511a80beadfb8fa",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679660,
+      "timeStamp": 1775905229
+    },
+    {
+      "hash": "0x0b34be700f581be9f6fa896672ea863d5fab1db1e115410f193de5d13116f45d",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679655,
+      "timeStamp": 1775905222
+    },
+    {
+      "hash": "0x651e404f345812b90148b03dc047f2780507ecadb7d941a77aeb95a060fd3c4f",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679650,
+      "timeStamp": 1775905213
+    },
+    {
+      "hash": "0x6734c1622588f55706d47ab0f63b2a4f62924c9a7776785cf18eab05ac74a672",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40679645,
+      "timeStamp": 1775905204
+    }
+  ],
+  "lastUpdated": "2026-04-11T11:01:39.636Z",
   "dailyCounts": [
     {
       "date": "2026-04-11",
-      "count": 1010
+      "count": 1018
     },
     {
       "date": "2026-04-10",
