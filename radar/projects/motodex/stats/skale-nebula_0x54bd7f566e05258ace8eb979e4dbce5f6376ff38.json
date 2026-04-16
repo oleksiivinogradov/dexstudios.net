@@ -1,9 +1,21 @@
 {
-  "total": 152334,
-  "last24h": 5504,
-  "recentTxs": [],
-  "lastUpdated": "2026-04-15T23:40:05.980Z",
+  "total": 152335,
+  "last24h": 3022,
+  "recentTxs": [
+    {
+      "hash": "0x5d84e01f39343be6ac90459468a5e2800977ebee4ae37720ab67f3d3e30a7de4",
+      "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
+      "value": "0",
+      "blockNumber": 40894549,
+      "timeStamp": 1776297623
+    }
+  ],
+  "lastUpdated": "2026-04-16T00:01:41.717Z",
   "dailyCounts": [
+    {
+      "date": "2026-04-16",
+      "count": 1
+    },
     {
       "date": "2026-04-15",
       "count": 3021
@@ -119,10 +131,6 @@
     {
       "date": "2026-03-18",
       "count": 2412
-    },
-    {
-      "date": "2026-03-17",
-      "count": 2343
     }
   ]
 }
