@@ -1,80 +1,84 @@
 {
-  "total": 514998,
-  "last24h": 403,
+  "total": 515039,
+  "last24h": 167,
   "recentTxs": [
     {
-      "hash": "0x1553eb2856f7018a408460147d3ffc999e7e8adedadf76ae0146f13a30c02aa1",
+      "hash": "0x8dc5a4d65d4e48f50527b4d65b1b34496dbcc98bace22e4cc534a2acc6e87dbe",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955122,
-      "timeStamp": 1795443516
+      "blockNumber": 54986407,
+      "timeStamp": 1795482431
     },
     {
-      "hash": "0x4189416df547198273741ee8ff5d3c5db3a41e8c87468edd39eca3b16c4e2b92",
+      "hash": "0x056f0a06c7da61318de822552b9e316070868aa4bdb7d0e1a78626b31fba11fc",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955114,
-      "timeStamp": 1795443506
+      "blockNumber": 54986399,
+      "timeStamp": 1795482421
     },
     {
-      "hash": "0x968a529020cba481274736a39e6e473bc15e9383831513734dcadafb581d6cdb",
+      "hash": "0xe4e970cd72134f0cd621894b2a232905c692147c48477fe5ce1791cbdc7cfb50",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955106,
-      "timeStamp": 1795443496
+      "blockNumber": 54986390,
+      "timeStamp": 1795482411
     },
     {
-      "hash": "0xbcd5b49577fd48cd214f9ba4aa15bfd93e7becb72bddbd379216d48784f379e5",
+      "hash": "0xacf78c1d2cee103798f3611277ae69c48781e0e608e4dd62b91911ea70515284",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955097,
-      "timeStamp": 1795443486
+      "blockNumber": 54986382,
+      "timeStamp": 1795482401
     },
     {
-      "hash": "0x04b75b863c1ba5868574eff1a5bf6873a26132d1253edf6d8267cc32790dbff2",
+      "hash": "0x4ec71dacd5bba821dabb616b830fb269a2a310eead935d7eeb52ce3f997ae1cf",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955091,
-      "timeStamp": 1795443474
+      "blockNumber": 54986373,
+      "timeStamp": 1795482391
     },
     {
-      "hash": "0xb82813071f660ac329e2ba795d0ce263b7ca8e6da541ffa899b919df08043a56",
+      "hash": "0x9a6a38798a6c22cbd82894da1bf5c940a3aa88be6b2123dc88db50d41d013426",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955082,
-      "timeStamp": 1795443464
+      "blockNumber": 54986363,
+      "timeStamp": 1795482379
     },
     {
-      "hash": "0x70fa374f6e685297268899a2607131c30b9f747cde52c30b616c8f0e47510f33",
+      "hash": "0xf281ffd9a05a6c03c433193d078717cbb21af6d71900a0181ed4fc5a12c5c965",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955073,
-      "timeStamp": 1795443454
+      "blockNumber": 54986356,
+      "timeStamp": 1795482369
     },
     {
-      "hash": "0xe20176ada59661048abd32f578e10e49ee43e6bfb178834034d1d3a71c25e56e",
+      "hash": "0x5105562f11076a8721491431668deeb81af49e88e2cf9198f9409ca2a12dd73b",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955064,
-      "timeStamp": 1795443444
+      "blockNumber": 54986347,
+      "timeStamp": 1795482358
     },
     {
-      "hash": "0xf7569b51e78a381a72d4d95cff3668d5872e2532433f848295f2c372b7d84afd",
+      "hash": "0xb23ce8b04dd3cd70cf204f26e8ffd88f7c7c55c034b1c87c9dc4baf8006999ef",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955056,
-      "timeStamp": 1795443434
+      "blockNumber": 54986338,
+      "timeStamp": 1795482348
     },
     {
-      "hash": "0xdd8e92284a8b430d89479f7027e2f7909572185535ef7fe1fa5b1f5df0f74501",
+      "hash": "0x29ce92c0735061d38657538bbb10f0d83bb7ef2fa925bbfcf2d21d79a7a1e095",
       "from": "0xdA22293aa75E005f7A6411a85f5aE053eBAfd3a9",
       "value": "0",
-      "blockNumber": 54955046,
-      "timeStamp": 1795443423
+      "blockNumber": 54986329,
+      "timeStamp": 1795482338
     }
   ],
-  "lastUpdated": "2026-11-23T14:27:25.723Z",
+  "lastUpdated": "2026-11-24T01:51:14.686Z",
   "dailyCounts": [
+    {
+      "date": "2026-11-24",
+      "count": 41
+    },
     {
       "date": "2026-11-23",
       "count": 126
@@ -190,10 +194,6 @@
     {
       "date": "2026-10-26",
       "count": 472
-    },
-    {
-      "date": "2026-10-25",
-      "count": 1333
     }
   ]
 }
